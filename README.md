@@ -47,7 +47,7 @@ ESP32-based Climbing Hangboard Force Gauge with data collection to CSV and a web
 - Timer will begin and beep at the end of each Hang and Rest period.
 - The idea is that you'll be able to see differences in your force production over the course of the exercise.
 
-  # Notes
+# Notes
   - I'm currently filtering the readings because I was experiencing very occasional signals that didn't belong. This may prove to be a poor solution, but it's the best I could come up with for now.
  
   # To-Do
