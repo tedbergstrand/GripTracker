@@ -5,7 +5,8 @@ ESP32-based Climbing Hangboard Force Gauge with data collection to CSV and a web
 
 
 # Hardware:
-- S Type Load Sensor - (ESP32-S3-DevKitC-1-N8R2)
+- Load Sensor - (https://amzn.to/3RfIloY)
+  - I took mine out of a Crane Scale. 
 - HX711 - (https://amzn.to/40VuAPo)
 - ESP32-S3-DevKitC-1-N8R2 - (https://amzn.to/3uAc5Eh)
 
