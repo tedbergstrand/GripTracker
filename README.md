@@ -2,7 +2,9 @@
 ESP32-based Climbing Hangboard Force Gauge with data collection to CSV and a webserver for management and data viewing. Allows CSV download from the web UI, as well as charting and rudimentary data analysis. Also features a hangboard timer with pre-populated exercises.
 
 ## This is in Alpha and may stay that way forever, depending on how excited I get on improving it. I'd love for your to contribute. I hacked this together over Thanksgiving and I'm not a pro coder, so it could certainly use some love from someone smarter than me.
----
+
+
+
 # Hardware:
 - Load Sensor - (https://amzn.to/3RfIloY)
   - I took mine out of a $25 Crane Scale. 
