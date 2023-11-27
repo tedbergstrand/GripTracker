@@ -38,6 +38,8 @@ I took the load sensor out of this Fuzion Hanging Crane Scale: https://amzn.to/3
 
 # Using GripTracker
 - GripTracker automatically begins logging data to a time-stamped CSV file. It will create a new file each time the device turns on.
+- GripTracker only needs power, not a computer connection
+  - Besides identifying the server's IP address.
 - New sessions can be started by entering a custom name on the main page.
 - Clicking the CSV file will let you download it.
 - Data Analysis gives a zoomable (on desktop) Google chart to visualize the hangs, as well as Duration, Peak Force, Average Force and, Standard Deviation for each hang in the session.
