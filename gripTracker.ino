@@ -6,13 +6,13 @@
 #include "HX711.h"
 
 
-// Load cell setup - CHANGE ME!
+// Load cell setup
 #define LOADCELL_DOUT_PIN  4
 #define LOADCELL_SCK_PIN   6
 HX711 scale;
 
 
-// WiFi credentials - CHANGE ME!
+// WiFi credentials
 const char* ssid = "SSID";
 const char* password = "PASSWORD";
 
@@ -26,7 +26,6 @@ String currentFileName;
 // Define the global JavaScript variable for styles
 const char* globalStyles = R"(
   <style>
-/* Reset some default styles */
 * {
   margin: 0;
   padding: 0;
@@ -66,7 +65,7 @@ h3 {
 
 #timerDisplay {
   padding-bottom: 20px;
-  font-size: 150%; /* Adjusted in media query below */
+  font-size: 2.5em;
 }
 
 .session-container {
@@ -103,6 +102,17 @@ button:hover {
   background-color: #0056b3;
 }
 
+#newSessionButton{
+  display: block;
+  margin: 0 auto;
+  padding: 12px; /* Larger padding for easier interaction */
+  font-size: 16px; /* Larger font size */
+}
+
+#tareButton {
+
+}
+
 /* Links styles */
 a {
   color: #007BFF;
@@ -133,9 +143,30 @@ th {
   background-color: #f2f2f2;
 }
 
+#hangAnalysisTable {
+  margin: 0 auto;
+  font-size: 1.8em;
+  max-width: 90%;
+  justify-content: center;
+  text-align: center;
+}
+
+#chart_div {
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+}
+
 /* Form styles */
 form {
   margin-bottom: 20px;
+}
+
+form input[type="text"] {
+  width: 400px;
+  margin: 0 auto;
+  margin-bottom: 10px;
+  height: 4em;
 }
 
 /* Container styles */
@@ -145,42 +176,10 @@ form {
   padding: 20px; /* Adjusted in media query below */
 }
 
-/* Add more styles as needed */
 
-/* Responsive design */
-@media screen and (max-width: 768px) {
-  h1 {
-    font-size: 28px; /* Smaller font size for smaller screens */
-  }
-
-  h2 {
-    font-size: 20px;
-  }
-
-  #timerDisplay {
-    font-size: 120%;
-  }
-
-  button {
-    font-size: 14px;
-  }
-
-  .container {
-    padding: 10px;
-    max-width: 100%; /* Full width on smaller screens */
-  }
-
-  table {
-    width: 100%; /* Full width on smaller screens */
-  }
-}
-  #hangAnalysisTable {
-    font-size:150%;
-    justify-content: center;
-}
 
     /* Responsive design */
-    @media screen and (max-width: 768px) {
+    @media screen and (max-width: 1028px) {
       h1 {
         font-size: 28px; /* Slightly larger font size */
       }
@@ -189,9 +188,7 @@ form {
         font-size: 20px;
       }
 
-      #timerDisplay {
-        font-size: 16px; /* Larger font size for better readability */
-      }
+
 
       button, input[type="text"], select {
         padding: 12px; /* Larger padding for easier interaction */
@@ -209,21 +206,11 @@ form {
       }
 
       form input[type="text"] {
-        width: calc(100% - 24px); /* Full width input fields */
+        width: 95%; /* Full width input fields */
       }
 
-      #chart_div {
-        width: 100%;
-        margin-left: 0;
-        margin-right: 0;
-     }
 
-      #newSessionButton{
-        display: block;
-        margin: 0 auto;
-        padding: 12px; /* Larger padding for easier interaction */
-        font-size: 16px; /* Larger font size */
-      }
+
     }
   </style>
 )";
@@ -281,9 +268,16 @@ void setup() {
   server.on("/dataView", HTTP_GET, handleDataView);
   server.on("/getTimerSettings", HTTP_GET, handleGetTimerSettings);
   server.onNotFound(handleNotFound);
+  server.on("/tare", HTTP_GET, handleTare);
   server.begin();
   Serial.println("HTTP server started");
 }
+
+void handleTare() {
+    scale.tare();
+    server.send(200, "text/plain", "Scale Tared");
+}
+
 
 void handleGetTimerSettings() {
   String protocol = server.arg("protocol");
@@ -314,7 +308,7 @@ void handleDataView() {
     }
 
 
-    String html = "<html><head>";
+    String html = "<!DOCTYPE html><html><head>";
     html += globalStyles;
     html += R"(
 </head>
@@ -408,7 +402,7 @@ chart.draw(data, options);
 
 
     // Closing HTML tags and send response
-    html += "</body></html>";
+    html += "<p>---</p><br><p>Made by Ted Bergstrand - 2023</p><br></body></html>";
     server.send(200, "text/html", html);
   } else {
     server.send(404, "text/plain", "File not found");
@@ -428,7 +422,7 @@ void handleRawData() {
     }
 
 
-   String html = "<html><head><meta name='viewport' content='width=device-width, initial-scale=1'>";
+   String html = "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1'>";
   html += globalStyles;
 
 
@@ -446,7 +440,7 @@ void handleRawData() {
     }
 
 
-    html += "</table><br><a href='/'>Back to Main Page</a></body></html>";
+    html += "</table><br><a href='/'>Back to Main Page</a><br><p>---</p><br><p>Made by Ted Bergstrand - 2023</p><br></body></html>";
 
 
     server.send(200, "text/html", html);
@@ -709,7 +703,7 @@ String createNewFile() {
 }
 
 void handleRoot() {
-  String html = "<html><head><meta name='viewport' content='width=device-width, initial-scale=1'>";
+  String html = "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1'>";
   html += globalStyles;
   html += R"(
 </head><body>
@@ -717,7 +711,9 @@ void handleRoot() {
 <form action='/create' method='get'>
 New Session: <input type='text' placeholder='Enter Session Name' name='name'>
 <input type='submit' id='newSessionButton' value='Create New Session'>
-</form><br>
+</form>
+<div id='tareButton' class='button-container'><button onclick='tareScale()'>Tare Scale</button></div>
+<br>
 
 <h3>Hangboard Timer</h3>
 <div id='timerDisplay'>00:00</div>
@@ -754,6 +750,14 @@ function updateTimerSettings() {
   xhr.open('GET', '/getTimerSettings?protocol=' + protocol, true);
   xhr.send();
 }
+
+function tareScale(event) {
+  fetch('/tare')
+    .then(response => response.text())
+    .then(data => console.log(data));
+}
+
+
 </script>
 
 <h2>Sessions</h2>
@@ -876,7 +880,7 @@ function updateTimerSettings() {
   xhr.send();
 }
 </script>
-</body></html>
+<p>---</p><br><p>Made by Ted Bergstrand - 2023</p><br></body></html>
 )";
 
   server.send(200, "text/html", html);
