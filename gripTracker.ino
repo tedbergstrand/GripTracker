@@ -358,7 +358,9 @@ var options = {
   explorer: {
     actions: ['dragToZoom', 'rightClickToReset'],
     axis: 'horizontal',
-    keepInBounds: true
+    keepInBounds: true,
+    maxZoomIn: 10,   // You can adjust this value as needed
+    maxZoomOut: 1     // You can adjust this value as needed
   },
   chartArea: {
     left: 0,
