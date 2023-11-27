@@ -28,7 +28,7 @@ I took the load sensor out of this Fuzion Hanging Crane Scale: https://amzn.to/3
 - SCK (Serial Clock) to another open GPIO port (I used GPIO6)
 
 ## Load code onto the ESP32.
-- Modify the WiFi credentials and your GPIO pins after the includes in the code.
+- Modify the WiFi credentials and your GPIO pins after the \#includes in the code.
 
 ## Access the server from a web browser
 - The ESP will print the IP address to the serial console when it connects. This is the URL you type into the browser.
