@@ -20,11 +20,11 @@ I took the load sensor out of this Fuzion Hanging Crane Scale: https://amzn.to/3
 - The Red wire goes to E+
 - Black to E-
 - White to A-
-- Green to A+.
+- Green to A+
 
 ## Solder 4 wires from the HX711 to the ESP32. 
-- GND will go to a ground pin on the ESP.
-- VCC (Power) to to a 3.3v Out pin.
+- GND will go to a ground pin on the ESP
+- VCC (Power) to to a 3.3v Out pin
 - DT (Data) to an open GPIO port (I used GPIO4)
 - SCK (Serial Clock) to another open GPIO port (I used GPIO6)
 
