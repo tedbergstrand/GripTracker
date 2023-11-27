@@ -52,6 +52,8 @@ I took the load sensor out of this Fuzion Hanging Crane Scale: https://amzn.to/3
 
 # Notes
   - I'm currently filtering the readings because I was experiencing very occasional signals that didn't belong. This may prove to be a poor solution, but it's the best I could come up with for now.
+  - I was having trouble getting the webserver to read external CSS and JS files, so everything is baked into the ESP code, right now. It's ugly, but it works.
  
   # To-Do
   - Add 10 second delay to Hangboard Timer start to allow you to get into position.
+  - Put CSS and JS into their own files to clean up the ESP code.
