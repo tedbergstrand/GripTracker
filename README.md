@@ -3,6 +3,7 @@ ESP32-based Climbing Hangboard Force Gauge with data collection to CSV and a web
 
 ## This is in Alpha and may stay that way forever, depending on how excited I get on improving it. I'd love for your to contribute. I hacked this together over Thanksgiving and I'm not a pro coder, so it could certainly use some love from someone smarter than me.
 
+---
 
 # Hardware:
 - Load Sensor - (https://amzn.to/3RfIloY)
@@ -32,6 +33,8 @@ I took the load sensor out of this Fuzion Hanging Crane Scale: https://amzn.to/3
 
 ## Access the server from a web browser
 - The ESP will print the IP address to the serial console when it connects. This is the URL you type into the browser.
+
+---
 
 # Using GripTracker
 - GripTracker automatically begins logging data to a time-stamped CSV file. It will create a new file each time the device turns on.
