@@ -38,6 +38,8 @@ I took the load sensor out of this Fuzion Hanging Crane Scale: https://amzn.to/3
 - New sessions can be started by entering a custom name on the main page.
 - Clicking the CSV file will let you download it.
 - Data Analysis gives a zoomable (on desktop) Google chart to visualize the hangs, as well as Duration, Peak Force, Average Force and, Standard Deviation for each hang in the session.
+  - To Zoom, left click and select the area you want to zoom in on.
+  - Right Click to return to full view.
 - Hangs are automatically separated in the code and adds a "0,NaN" line to the CSV to indicate a new hang.
 - Raw data can be viewed without downloading the CSV.
 - You are able to delete CSV files through the Web UI. (Note: this is irreversible).
