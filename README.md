@@ -12,7 +12,7 @@ ESP32-based Climbing Hangboard Force Gauge with data collection to CSV and a web
 
 # To build the sensor:
 
-## I took the load sensor out of this Fuzion Hanging Crane Scale: https://amzn.to/3RfIloY. You can desolder or cut the 4 wires coming from the sensor. Any load sensor should work, but you'll likely need to tweak the calibration, no matter what.
+I took the load sensor out of this Fuzion Hanging Crane Scale: https://amzn.to/3RfIloY. You can desolder or cut the 4 wires coming from the sensor. Any load sensor should work, but you'll likely need to tweak the calibration, no matter what.
 
 ## Solder the load sensor to the HX711. 
 - The Red wire goes to E+
