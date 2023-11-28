@@ -53,7 +53,7 @@ I took the load sensor out of this Fuzion Hanging Crane Scale: https://amzn.to/3
 # Hangboard Timer
 - Pre-populated with Repeaters, a version of Eva Lopez' MaxHangz, and Emil Abrahamsson's No Hangs protocols.
 - Select the exercise from the drop-down and click the Start Button.
-- Timer will begin and beep at the end of each Hang and Rest period.
+- Timer will beep at each transition between Get Ready, Hang, and Rest.
 - The idea is that you'll be able to see differences in your force production over the course of the exercise.
 
 # Notes
