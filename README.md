@@ -62,5 +62,6 @@ I took the load sensor out of this Fuzion Hanging Crane Scale: https://amzn.to/3
  
   # To-Do
   - Put CSS and JS into their own files to clean up the ESP code.
+    - Arduino IDE 2 makes SPIFFS uploading more difficult. I'll split them up, but I will also leave the one-shot code for people who don't want to install 1.8.19 to handle SPIFFS uploading.  
   - Add instructions for using the Sparkfun sketches for calibration of HX711/Load Sensor to README.
   - Add photos to README
