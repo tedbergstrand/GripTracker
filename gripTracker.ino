@@ -776,6 +776,7 @@ function tareScale(event) {
 html += R"(
 </div>
 <script>
+let isGettingReady = false;
 let timerInterval; let currentTime = 0;
 let repAmount, repTime, repRest, setAmount, setRest;
 let currentRep = 0; let currentSet = 0; let isHanging = true;
@@ -793,33 +794,56 @@ function beep(duration = 200, frequency = 520) {
 }
 
 function updateTimerDisplay() {
-  let displayText = isHanging ? 'Hang ' : 'Rest ';
-  document.getElementById('timerDisplay').textContent = displayText + currentTime;
+  let displayText;
+  if (isGettingReady) {
+    displayText = 'Get Ready ' + currentTime; // Display "Get Ready" during the get-ready phase
+  } else {
+    displayText = isHanging ? 'Hang ' : 'Rest ';
+    displayText += currentTime;
+  }
+  document.getElementById('timerDisplay').textContent = displayText;
 }
 
+
 function timerTick() {
-  if (currentTime <= 1) {
-    beep(); // Call beep at every transition
-    if (isHanging) {
-      if (currentRep < repAmount) {
-        isHanging = false;
-        currentTime = (repRest > 0) ? repRest : setRest;
-        currentRep++;
-      } else if (currentSet < setAmount) {
-        currentSet++;
-        currentRep = 0;
-        isHanging = false;
-        currentTime = setRest;
-      } else {
-        stopTimer();
-        return;
-      }
-    } else {
+  if (isGettingReady) {
+    // Get Ready phase countdown
+    if (currentTime <= 1) {
+      beep(); // Beep at the end of Get Ready phase
+      isGettingReady = false;
+      // Start the actual timer for the exercise
+      currentRep = 0;
+      currentSet = 0;
       isHanging = true;
       currentTime = repTime;
+    } else {
+      currentTime--;
     }
   } else {
-    currentTime--;
+    // Regular timer phase
+    if (currentTime <= 1) {
+      beep(); // Call beep at every transition
+      if (isHanging) {
+        if (currentRep < repAmount) {
+          isHanging = false;
+          currentTime = (repRest > 0) ? repRest : setRest;
+          currentRep++;
+        } else if (currentSet < setAmount) {
+          currentSet++;
+          currentRep = 0;
+          isHanging = false;
+          currentTime = setRest;
+        } else {
+          stopTimer();
+          return;
+        }
+      } else {
+        isHanging = true;
+        currentTime = repTime;
+      }
+    } else {
+      currentTime--;
+    }
   }
   updateTimerDisplay();
 }
@@ -830,15 +854,17 @@ function startTimer() {
     audioCtx.resume();
   }
   fetch('/startTimer');
+  
+  // Start the Get Ready phase
+  isGettingReady = true;
+  currentTime = 10; // 10 seconds for the Get Ready phase
   if (!timerInterval) {
     console.log('Starting new timer'); // Debugging
-    currentRep = 0; currentSet = 0;
-    isHanging = true;
-    currentTime = repTime;
     timerInterval = setInterval(timerTick, 1000);
     updateTimerDisplay();
   }
 }
+
 
 function stopTimer() {
   console.log('Stopping timer'); // Debugging
