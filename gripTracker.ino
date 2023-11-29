@@ -20,7 +20,7 @@ void setup() {
   Serial.println("GripTracker");
 
   // Set up as an Access Point
-  const char* ap_ssid = "GripTrainer"; // Name of the access point
+  const char* ap_ssid = "GripTracker"; // Name of the access point
   const char* ap_password = "12345678"; // Password for the access point, can be empty for an open network
 
   // Create an Access Point
@@ -518,13 +518,19 @@ New Session: <input type='text' placeholder='Enter Session Name' name='name'>
 
 
 
-  File root = SPIFFS.open("/");
-  File file = root.openNextFile();
-  while (file) {
-    String fileName = file.name();
-    html += "<p><a href=\"" + fileName + "\">" + fileName + "</a> | <a href=\"/dataView?file=" + fileName + "\">Data Analysis</a> | <a href=\"/rawdata?file=" + fileName + "\">Raw Data</a> |        <a href=\"/delete?file=" + fileName + "\">Delete</a></p>";
-    file = root.openNextFile();
+File root = SPIFFS.open("/");
+File file = root.openNextFile();
+while (file) {
+  String fileName = file.name();
+
+  // Check if the file has a .csv extension
+  if (fileName.endsWith(".csv")) {
+    html += "<p><a href=\"" + fileName + "\">" + fileName + "</a> | <a href=\"/dataView?file=" + fileName + "\">Data Analysis</a> | <a href=\"/rawdata?file=" + fileName + "\">Raw Data</a> | <a href=\"/delete?file=" + fileName + "\">Delete</a></p>";
   }
+
+  file = root.openNextFile();
+}
+
 html += R"(
 </div>
 <p>---</p><br><p>Made by Ted Bergstrand - 2023</p><br></body></html>
