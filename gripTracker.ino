@@ -14,20 +14,25 @@ HX711 scale;
 WebServer server(80);
 
 String currentFileName;
+float hangStartTime = 0.0;
+bool hangInProgress = false;
+bool currentlyHanging = false;
 
-void disconnectClients() {
-  int numClients = WiFi.softAPgetStationNum();
-  for (int i = 0; i < numClients; i++) {
-    WiFi.softAPdisconnect(i);
-  }
-}
+struct HangData {
+    float startTime;
+    float endTime;
+    std::vector<String> dataLines;
+};
+
+HangData currentHang;
+
+
+
+
 
 void setup() {
   Serial.begin(9600);
   Serial.println("GripTracker");
-
-  // Disconnect all connected clients
-  disconnectClients();
 
   // Set up as an Access Point
   const char* ap_ssid = "GripTracker"; // Name of the access point
@@ -83,16 +88,23 @@ void setup() {
 
   server.serveStatic("/style.css", SPIFFS, "/style.css");
   server.serveStatic("/timer.js", SPIFFS, "/timer.js");
-  
+
   server.begin();
   Serial.println("HTTP server started");
 }
 
 
 void handleTare() {
-    scale.tare();
-    server.send(200, "text/plain", "Scale Tared");
+  scale.tare();
+  server.send(200, "text/plain", "Scale Tared");
 }
+
+void endHangSession() {
+  currentlyHanging = false;
+  hangStartTime = 0.0;
+}
+
+
 
 
 void handleGetTimerSettings() {
@@ -160,10 +172,10 @@ void handleRawData() {
     }
 
 
-   String html = "<!DOCTYPE html><html><head><link rel='stylesheet' type='text/css' href='/style.css'><meta name='viewport' content='width=device-width, initial-scale=1'>";
+    String html = "<!DOCTYPE html><html><head><link rel='stylesheet' type='text/css' href='/style.css'><meta name='viewport' content='width=device-width, initial-scale=1'>";
 
 
-  html += "</head><body><h1>Raw Data</h1><table border='1'><tr><th>Time (s)</th><th>Force (lbs)</th></tr>";
+    html += "</head><body><h1>Raw Data</h1><table border='1'><tr><th>Time (s)</th><th>Force (lbs)</th></tr>";
 
 
     while (file.available()) {
@@ -271,25 +283,15 @@ String calculateHangSummary(File &file) {
 
 
 float calculateStdDev(const std::vector<float>& values, float mean) {
-    float sum = 0.0;
-    for (float value : values) {
-        sum += pow(value - mean, 2);
-    }
-    return sqrt(sum / values.size());
+  float sum = 0.0;
+  for (float value : values) {
+    sum += pow(value - mean, 2);
+  }
+  return sqrt(sum / values.size());
 }
 
 
 
-
-
-
-
-
-
-
-
-
-bool currentlyHanging = false; // To track if the user is currently hanging
 
 
 
@@ -311,70 +313,73 @@ static int consecutiveAboveThresholdCount = 0; // Counter for consecutive readin
 float lastWeight = 0;
 
 void loop() {
-    scale.set_scale(-4200.00);
-    float weight = scale.get_units() * -1;
+  scale.set_scale(-4200.00);
+  float weight = scale.get_units() * -1;
 
-    // Use the direct reading without filtering
-    Serial.print("Reading: ");
-    Serial.print(weight, 1);
-    Serial.print(" lbs");
-    Serial.println();
+  // Use the direct reading without filtering
+  Serial.print("Reading: ");
+  Serial.print(weight, 1);
+  Serial.print(" lbs");
+  Serial.println();
 
-    // Logic for handling the force reading
-    if (abs(weight) > forceThreshold) {
-        consecutiveAboveThresholdCount++;
+  // Logic for handling the force reading
+  if (abs(weight) > forceThreshold) {
+    consecutiveAboveThresholdCount++;
 
-        // Log the weight
-        logWeight(weight);
+    // Log the weight
+    logWeight(weight);
 
-        // Start a new hang session if sustained force is detected
-        if (!currentlyHanging && consecutiveAboveThresholdCount >= consecutiveReadingsThreshold) {
-            currentlyHanging = true;
-            // Optionally, log a new hang session start marker here
-            // markNewHangSession(); // Uncomment if needed
-        }
-    } else {
-        // Reset the counter and flags if force is below the threshold
-        consecutiveAboveThresholdCount = 0;
-        if (currentlyHanging) {
-            currentlyHanging = false;
-            markNewHangSession();
-        }
+    // Start a new hang session if sustained force is detected
+    if (!currentlyHanging && consecutiveAboveThresholdCount >= consecutiveReadingsThreshold) {
+      currentlyHanging = true;
+      // Optionally, log a new hang session start marker here
+      // markNewHangSession(); // Uncomment if needed
     }
+  } else {
+    // Reset the counter and flags if force is below the threshold
+    consecutiveAboveThresholdCount = 0;
+    if (currentlyHanging) {
+      currentlyHanging = false;
+      markNewHangSession();
+    }
+  }
 
-    server.handleClient();
-    delay(100);
+  server.handleClient();
+  delay(100);
 }
-
-
-
-
-
-
 
 
 
 
 void logWeight(float weight) {
-  File file = SPIFFS.open(currentFileName, FILE_APPEND);
-  if (file) {
-    float timestampInSeconds = millis() / 1000.0; // Convert milliseconds to seconds
-    String formattedTimestamp = String(timestampInSeconds, 2); // Format with 2 decimal places
-    file.print(formattedTimestamp);
-    file.print(",");
-    file.println(weight);
-    file.close();
-  }
+    float timestampInSeconds = millis() / 1000.0; // Current time
+    if (!hangInProgress) {
+        hangInProgress = true;
+        currentHang.startTime = timestampInSeconds;
+        currentHang.dataLines.clear();
+    }
+    currentHang.dataLines.push_back(String(timestampInSeconds, 2) + "," + String(weight));
 }
+
 
 
 void markNewHangSession() {
-  File file = SPIFFS.open(currentFileName, FILE_APPEND);
-  if (file) {
-    file.println("0,NaN"); // Use 0 as a timestamp placeholder
-    file.close();
-  }
+    currentHang.endTime = millis() / 1000.0;
+    if (hangInProgress && (currentHang.endTime - currentHang.startTime >= 1.0)) {
+        // Write hang data to file
+        File file = SPIFFS.open(currentFileName, FILE_APPEND);
+        if (file) {
+            for (const auto& line : currentHang.dataLines) {
+                file.println(line);
+            }
+            file.println("0,NaN"); // Mark end of hang
+            file.close();
+        }
+    }
+    hangInProgress = false;
 }
+
+
 
 
 bool isFileEmpty(const String& fileName) {
@@ -561,7 +566,7 @@ bool loadFromSPIFFS(String path) {
   if (path.endsWith(".csv")) {
     contentType = "text/csv";
   }
- 
+
   if (server.streamFile(file, contentType) != file.size()) {
     Serial.println("Sent less data than expected!");
   }
