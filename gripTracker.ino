@@ -15,9 +15,19 @@ WebServer server(80);
 
 String currentFileName;
 
+void disconnectClients() {
+  int numClients = WiFi.softAPgetStationNum();
+  for (int i = 0; i < numClients; i++) {
+    WiFi.softAPdisconnect(i);
+  }
+}
+
 void setup() {
   Serial.begin(9600);
   Serial.println("GripTracker");
+
+  // Disconnect all connected clients
+  disconnectClients();
 
   // Set up as an Access Point
   const char* ap_ssid = "GripTracker"; // Name of the access point
@@ -31,12 +41,25 @@ void setup() {
   Serial.print("IP Address: ");
   Serial.println(WiFi.softAPIP());
 
-  configTime(0, 0, "pool.ntp.org"); // Configure NTP client
 
   // Initialize SPIFFS
   if (!SPIFFS.begin(true)) {
     Serial.println("An Error has occurred while mounting SPIFFS");
     return;
+  }
+
+  // Scan for and delete any empty CSV files
+  File root = SPIFFS.open("/");
+  while (File file = root.openNextFile()) {
+    String fileName = "/" + String(file.name()); // Ensure the filename starts with '/'
+    if (fileName.endsWith(".csv") && file.size() == 0) {
+      file.close(); // Close the file before attempting to delete it
+      if (SPIFFS.remove(fileName)) {
+        Serial.println("Deleted empty file: " + fileName);
+      } else {
+        Serial.println("Failed to delete empty file: " + fileName);
+      }
+    }
   }
 
   // Load cell setup
@@ -56,6 +79,7 @@ void setup() {
   server.on("/getTimerSettings", HTTP_GET, handleGetTimerSettings);
   server.onNotFound(handleNotFound);
   server.on("/tare", HTTP_GET, handleTare);
+  server.on("/forceData", HTTP_GET, handleForceData);
 
   server.serveStatic("/style.css", SPIFFS, "/style.css");
   server.serveStatic("/timer.js", SPIFFS, "/timer.js");
@@ -365,7 +389,6 @@ bool isFileEmpty(const String& fileName) {
   return isEmpty;
 }
 
-
 String createNewFile() {
   int maxSessionNumber = 0;
 
@@ -373,42 +396,39 @@ String createNewFile() {
   File root = SPIFFS.open("/");
   while (File file = root.openNextFile()) {
     String fileName = file.name();
+
+    // Check if the file is a session file
     if (fileName.startsWith("/Session-") && fileName.endsWith(".csv")) {
       int sessionNumber = fileName.substring(9, fileName.length() - 4).toInt();
       if (sessionNumber > maxSessionNumber) {
-        maxSessionNumber = sessionNumber;
+        maxSessionNumber = sessionNumber; // Update the max session number
       }
     }
   }
 
-  // Increment the session number for the new file
-  int newSessionNumber = maxSessionNumber + 1;
-  String newFileName = "/Session-" + String(newSessionNumber) + ".csv";
+  // Find a unique session number for the new file
+  String newFileName;
+  do {
+    newFileName = "/Session-" + String(++maxSessionNumber) + ".csv";
+  } while (SPIFFS.exists(newFileName)); // Check if the new file name exists
 
-  // Scan for and delete any empty CSV files
-  root = SPIFFS.open("/"); // Re-open the root directory to refresh file list
-  while (File file = root.openNextFile()) {
-    String fileName = "/" + String(file.name());
-    if (fileName.endsWith(".csv") && file.size() == 0) {
-      file.close(); // Close before delete
-      if (SPIFFS.remove(fileName)) {
-        Serial.println("Deleted empty file: " + fileName);
-      } else {
-        Serial.println("Failed to delete empty file: " + fileName);
-      }
-    }
-  }
-
-  // Create the new file
+  // Attempt to create the new file
   File newFile = SPIFFS.open(newFileName, FILE_WRITE);
   if (newFile) {
+    Serial.println("Created new file: " + newFileName);
     newFile.close();
     return newFileName;
   } else {
-    Serial.println("Failed to create file");
+    Serial.println("Failed to create file: " + newFileName);
     return "";
   }
 }
+
+
+
+
+
+
 
 void handleRoot() {
   String html = "<!DOCTYPE html><html><head><link rel='stylesheet' type='text/css' href='/style.css'><meta name='viewport' content='width=device-width, initial-scale=1'>";
@@ -421,6 +441,21 @@ New Session: <input type='text' placeholder='Enter Session Name' name='name'>
 </form>
 <div id='tareButton' class='button-container'><button onclick='tareScale()'>Tare Scale</button></div>
 <br>
+
+ <h3>Live Force Reading</h3>
+  <div id="forceValue">0 lbs</div>
+  <script>
+  function updateForce() {
+    fetch('/forceData')
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('forceValue').innerHTML = data.force + ' lbs';
+      })
+      .catch(error => console.error('Error:', error));
+  }
+
+  setInterval(updateForce, 200); // Update force every second
+  </script><br>
 
 <h3>Hangboard Timer</h3>
 <div id='timerDisplay'>00:00</div>
@@ -496,6 +531,14 @@ void handleDelete() {
   }
   server.sendHeader("Location", "/", true); // Redirect back to the root page
   server.send(302, "text/plain", ""); // HTTP status code for redirection
+}
+
+void handleForceData() {
+  scale.set_scale(-4200.00);
+  float weight = scale.get_units() * -1;
+
+  String jsonResponse = "{\"force\": " + String(weight, 1) + "}";
+  server.send(200, "application/json", jsonResponse);
 }
 
 
