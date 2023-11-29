@@ -5,7 +5,6 @@
 #include <SPIFFS.h>
 #include "HX711.h"
 
-
 // Load cell setup
 #define LOADCELL_DOUT_PIN  4
 #define LOADCELL_SCK_PIN   6
@@ -26,9 +25,17 @@ struct HangData {
 
 HangData currentHang;
 
+const int lowForceThresholdCount = 5;
+const int consistentForceDuration = 300; // 300 milliseconds
+unsigned long lastForceTime = 0; // Timestamp when the force was last above threshold
+float lastForce = 0; // Last force value that was above the threshold
+const float forceThreshold = 2.5; // Threshold for force
+const int consecutiveReadingsThreshold = 5; // Number of consecutive readings to start logging
+static int consecutiveAboveThresholdCount = 0; // Counter for consecutive readings above threshold
+float lastWeight = 0;
 
 
-
+// Setup
 
 void setup() {
   Serial.begin(9600);
@@ -94,73 +101,107 @@ void setup() {
 }
 
 
-void handleTare() {
-  scale.tare();
-  server.send(200, "text/plain", "Scale Tared");
-}
 
-void endHangSession() {
-  currentlyHanging = false;
-  hangStartTime = 0.0;
-}
+// Server Endpoint Handlers
 
+void handleRoot() {
+  String html = "<!DOCTYPE html><html><head><link rel='stylesheet' type='text/css' href='/style.css'><meta name='viewport' content='width=device-width, initial-scale=1'>";
+  html += R"(
+</head><body><script src="/timer.js"></script>
+<h1>GripTracker</h1>
+<form action='/create' method='get'>
+New Session: <input type='text' placeholder='Enter Session Name' name='name'>
+<input type='submit' id='newSessionButton' value='Create New Session'>
+</form>
+<div id='tareButton' class='button-container'><button onclick='tareScale()'>Tare Scale</button></div>
+<br>
 
-
-
-void handleGetTimerSettings() {
-  String protocol = server.arg("protocol");
-
-  int repAmount, repTime, repRest, setAmount, setRest;
-  if (protocol == "maxHangs") {
-    repAmount = 1; repTime = 8; repRest = -1; setAmount = 6; setRest = 180;
-  } else if (protocol == "noHang") {
-    repAmount = 12; repTime = 10; repRest = 50; setAmount = 1; setRest = -1;
-  } else { // Default to Repeaters
-    repAmount = 6; repTime = 7; repRest = 3; setAmount = 6; setRest = 180;
+ <h3>Live Force Reading</h3>
+  <div id="forceValue">0 lbs</div>
+  <script>
+  function updateForce() {
+    fetch('/forceData')
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('forceValue').innerHTML = data.force + ' lbs';
+      })
+      .catch(error => console.error('Error:', error));
   }
 
-  String jsonResponse = "{\"repAmount\": " + String(repAmount) + ", \"repTime\": " + String(repTime) + ", \"repRest\": " + String(repRest) + ", \"setAmount\": " + String(setAmount) + ", \"setRest\": " + String(setRest) + "}";
-  server.send(200, "application/json", jsonResponse);
+  setInterval(updateForce, 200); // Update force every second
+  </script><br>
+
+<h3>Hangboard Timer</h3>
+<div id='timerDisplay'>00:00</div>
+<div class=button-container>
+<button onclick='startTimer()'>Start Timer</button>
+<button onclick='stopTimer()'>Stop Timer</button>
+</div>
+
+<select id='protocolSelect' onchange='updateTimerSettings()'>
+<option value='' disabled selected>Select an Exercise</option>
+<option value='climbingRepeater'>Repeaters</option>
+<option value='maxHangs'>Eva Lopez' MaxHangz</option>
+<option value='noHang'>Emil Abrahamsson's No Hangs</option>
+</select>
+
+
+
+<h2>Sessions</h2>
+<div class='session-container'>
+)";
+
+
+
+File root = SPIFFS.open("/");
+File file = root.openNextFile();
+while (file) {
+  String fileName = file.name();
+
+  // Check if the file has a .csv extension
+  if (fileName.endsWith(".csv")) {
+    html += "<p><a href=\"" + fileName + "\">" + fileName + "</a> | <a href=\"/dataView?file=" + fileName + "\">Data Analysis</a> | <a href=\"/rawdata?file=" + fileName + "\">Raw Data</a> | <a href=\"/delete?file=" + fileName + "\">Delete</a></p>";
+  }
+
+  file = root.openNextFile();
 }
 
+html += R"(
+</div>
+<p>---</p><br><p>Made by Ted Bergstrand - 2023</p><br></body></html>
+)";
 
+  server.send(200, "text/html", html);
+}
 
-void handleDataView() {
-  String fileName = "/" + server.arg("file");
-  if (SPIFFS.exists(fileName)) {
-    File file = SPIFFS.open(fileName, "r");
-    if (!file) {
-      server.send(500, "text/plain", "Error opening file: " + fileName);
-      return;
+void handleCreate() {
+  String newFileName = "/" + server.arg("name") + ".csv";
+  if (newFileName.length() > 1 && !SPIFFS.exists(newFileName)) {
+    File file = SPIFFS.open(newFileName, FILE_WRITE);
+    if (file) {
+      file.close();
+      currentFileName = newFileName; // Set the new file as the current file
+      server.sendHeader("Location", "/", true); // Redirect to the main page
+      server.send(302, "text/plain", "");
+    } else {
+      server.send(500, "text/plain", "Error creating file");
     }
-
-    // Prepare HTML for output
-    String html = "<!DOCTYPE html><html><head><link rel='stylesheet' type='text/css' href='/style.css'>";
-    html += "</head><body>";
-
-    // Calculate the summary
-    String summary = calculateHangSummary(file);
-    file.close(); // Close the file after calculating the summary
-
-    // Append summary to HTML
-    html += "<h2>Hang Data</h2><pre>" + summary + "</pre>";
-
-    // Add link back to main page
-    html += "<br><a href='/'>Back to Main Page</a>";
-
-    // Closing HTML tags
-    html += "<p>---</p><br><p>Made by Ted Bergstrand - 2023</p><br></body></html>";
-
-    // Send the HTML response
-    server.send(200, "text/html", html);
   } else {
-    server.send(404, "text/plain", "File not found");
+    server.send(400, "text/plain", "Invalid file name or file already exists");
   }
 }
 
-
-
-
+void handleDelete() {
+  String fileToDelete = "/" + server.arg("file"); // Ensure the file path starts with a slash
+  if (fileToDelete.length() > 1 && SPIFFS.exists(fileToDelete)) { // Check if file exists
+    SPIFFS.remove(fileToDelete); // Delete the file
+    Serial.println("File deleted: " + fileToDelete);
+  } else {
+    Serial.println("File not found: " + fileToDelete);
+  }
+  server.sendHeader("Location", "/", true); // Redirect back to the root page
+  server.send(302, "text/plain", ""); // HTTP status code for redirection
+}
 
 void handleRawData() {
   String fileName = "/" + server.arg("file"); // Ensure the file path starts with a slash
@@ -199,12 +240,129 @@ void handleRawData() {
   }
 }
 
+void handleDataView() {
+  String fileName = "/" + server.arg("file");
+  if (SPIFFS.exists(fileName)) {
+    File file = SPIFFS.open(fileName, "r");
+    if (!file) {
+      server.send(500, "text/plain", "Error opening file: " + fileName);
+      return;
+    }
+
+    // Prepare HTML for output
+    String html = "<!DOCTYPE html><html><head><link rel='stylesheet' type='text/css' href='/style.css'>";
+    html += "</head><body>";
+
+    // Calculate the summary
+    String summary = calculateHangSummary(file);
+    file.close(); // Close the file after calculating the summary
+
+    // Append summary to HTML
+    html += "<h2>Hang Data</h2><pre>" + summary + "</pre>";
+
+    // Add link back to main page
+    html += "<br><a href='/'>Back to Main Page</a>";
+
+    // Closing HTML tags
+    html += "<p>---</p><br><p>Made by Ted Bergstrand - 2023</p><br></body></html>";
+
+    // Send the HTML response
+    server.send(200, "text/html", html);
+  } else {
+    server.send(404, "text/plain", "File not found");
+  }
+}
+
+void handleGetTimerSettings() {
+  String protocol = server.arg("protocol");
+
+  int repAmount, repTime, repRest, setAmount, setRest;
+  if (protocol == "maxHangs") {
+    repAmount = 1; repTime = 8; repRest = -1; setAmount = 6; setRest = 180;
+  } else if (protocol == "noHang") {
+    repAmount = 12; repTime = 10; repRest = 50; setAmount = 1; setRest = -1;
+  } else { // Default to Repeaters
+    repAmount = 6; repTime = 7; repRest = 3; setAmount = 6; setRest = 180;
+  }
+
+  String jsonResponse = "{\"repAmount\": " + String(repAmount) + ", \"repTime\": " + String(repTime) + ", \"repRest\": " + String(repRest) + ", \"setAmount\": " + String(setAmount) + ", \"setRest\": " + String(setRest) + "}";
+  server.send(200, "application/json", jsonResponse);
+}
+
+void handleTare() {
+  scale.tare();
+  server.send(200, "text/plain", "Scale Tared");
+}
+
+void handleForceData() {
+  scale.set_scale(-4200.00);
+  float weight = scale.get_units() * -1;
+
+  String jsonResponse = "{\"force\": " + String(weight, 1) + "}";
+  server.send(200, "application/json", jsonResponse);
+}
+
+void handleNotFound() {
+  if (loadFromSPIFFS(server.uri())) return;
+  server.send(404, "text/plain", "File Not Found");
+}
+
+bool loadFromSPIFFS(String path) {
+  File file = SPIFFS.open(path, "r");
+  if (!file) {
+    return false;
+  }
 
 
+  String contentType = "text/plain";
+  if (path.endsWith(".csv")) {
+    contentType = "text/csv";
+  }
+
+  if (server.streamFile(file, contentType) != file.size()) {
+    Serial.println("Sent less data than expected!");
+  }
+  file.close();
+  return true;
+}
 
 
+// Utility Functions
 
+String createNewFile() {
+  int maxSessionNumber = 0;
 
+  // Scan existing files to find the highest session number
+  File root = SPIFFS.open("/");
+  while (File file = root.openNextFile()) {
+    String fileName = file.name();
+
+    // Check if the file is a session file
+    if (fileName.startsWith("/Session-") && fileName.endsWith(".csv")) {
+      int sessionNumber = fileName.substring(9, fileName.length() - 4).toInt();
+      if (sessionNumber > maxSessionNumber) {
+        maxSessionNumber = sessionNumber; // Update the max session number
+      }
+    }
+  }
+
+  // Find a unique session number for the new file
+  String newFileName;
+  do {
+    newFileName = "/Session-" + String(++maxSessionNumber) + ".csv";
+  } while (SPIFFS.exists(newFileName)); // Check if the new file name exists
+
+  // Attempt to create the new file
+  File newFile = SPIFFS.open(newFileName, FILE_WRITE);
+  if (newFile) {
+    Serial.println("Created new file: " + newFileName);
+    newFile.close();
+    return newFileName;
+  } else {
+    Serial.println("Failed to create file: " + newFileName);
+    return "";
+  }
+}
 
 String calculateHangSummary(File &file) {
   // Start the HTML table with headers
@@ -279,77 +437,13 @@ String calculateHangSummary(File &file) {
   return hangSummary;
 }
 
-
-
-
 float calculateStdDev(const std::vector<float>& values, float mean) {
-  float sum = 0.0;
-  for (float value : values) {
-    sum += pow(value - mean, 2);
-  }
-  return sqrt(sum / values.size());
-}
-
-
-
-
-
-
-
-// Global variable to count consecutive low-force readings
-int lowForceReadingsCount = 0;
-const int lowForceThresholdCount = 5; // Number of readings to confirm end of hang
-
-
-// Define a constant for the minimum duration a force must be consistent
-const int consistentForceDuration = 300; // 300 milliseconds
-unsigned long lastForceTime = 0; // Timestamp when the force was last above threshold
-float lastForce = 0; // Last force value that was above the threshold
-
-const float forceThreshold = 2.5; // Threshold for force
-const int consecutiveReadingsThreshold = 5; // Number of consecutive readings to start logging
-static int consecutiveAboveThresholdCount = 0; // Counter for consecutive readings above threshold
-
-float lastWeight = 0;
-
-void loop() {
-  scale.set_scale(-4200.00);
-  float weight = scale.get_units() * -1;
-
-  // Use the direct reading without filtering
-  Serial.print("Reading: ");
-  Serial.print(weight, 1);
-  Serial.print(" lbs");
-  Serial.println();
-
-  // Logic for handling the force reading
-  if (abs(weight) > forceThreshold) {
-    consecutiveAboveThresholdCount++;
-
-    // Log the weight
-    logWeight(weight);
-
-    // Start a new hang session if sustained force is detected
-    if (!currentlyHanging && consecutiveAboveThresholdCount >= consecutiveReadingsThreshold) {
-      currentlyHanging = true;
-      // Optionally, log a new hang session start marker here
-      // markNewHangSession(); // Uncomment if needed
+    float sum = 0.0;
+    for (float value : values) {
+        sum += pow(value - mean, 2);
     }
-  } else {
-    // Reset the counter and flags if force is below the threshold
-    consecutiveAboveThresholdCount = 0;
-    if (currentlyHanging) {
-      currentlyHanging = false;
-      markNewHangSession();
-    }
-  }
-
-  server.handleClient();
-  delay(100);
+    return sqrt(sum / values.size());
 }
-
-
-
 
 void logWeight(float weight) {
     float timestampInSeconds = millis() / 1000.0; // Current time
@@ -361,25 +455,25 @@ void logWeight(float weight) {
     currentHang.dataLines.push_back(String(timestampInSeconds, 2) + "," + String(weight));
 }
 
-
-
 void markNewHangSession() {
-    currentHang.endTime = millis() / 1000.0;
-    if (hangInProgress && (currentHang.endTime - currentHang.startTime >= 1.0)) {
-        // Write hang data to file
-        File file = SPIFFS.open(currentFileName, FILE_APPEND);
-        if (file) {
-            for (const auto& line : currentHang.dataLines) {
-                file.println(line);
+    if (hangInProgress) {
+        currentHang.endTime = millis() / 1000.0;
+        if (currentHang.endTime - currentHang.startTime >= 1.0) {
+            // Write hang data to file
+            File file = SPIFFS.open(currentFileName, FILE_APPEND);
+            if (file) {
+                for (const auto& line : currentHang.dataLines) {
+                    file.println(line);
+                }
+                file.println("0,NaN"); // Mark end of hang
+                file.close();
             }
-            file.println("0,NaN"); // Mark end of hang
-            file.close();
         }
+        // Reset hang data
+        currentHang.dataLines.clear();
+        hangInProgress = false;
     }
-    hangInProgress = false;
 }
-
-
 
 
 bool isFileEmpty(const String& fileName) {
@@ -388,188 +482,47 @@ bool isFileEmpty(const String& fileName) {
     return true; // File doesn't exist or couldn't be opened
   }
 
-
   bool isEmpty = file.size() == 0;
   file.close();
   return isEmpty;
 }
 
-String createNewFile() {
-  int maxSessionNumber = 0;
 
-  // Scan existing files to find the highest session number
-  File root = SPIFFS.open("/");
-  while (File file = root.openNextFile()) {
-    String fileName = file.name();
+// Loop Function
 
-    // Check if the file is a session file
-    if (fileName.startsWith("/Session-") && fileName.endsWith(".csv")) {
-      int sessionNumber = fileName.substring(9, fileName.length() - 4).toInt();
-      if (sessionNumber > maxSessionNumber) {
-        maxSessionNumber = sessionNumber; // Update the max session number
-      }
-    }
-  }
+void loop() {
+    scale.set_scale(-4200.00);
+    float weight = scale.get_units() * -1;
 
-  // Find a unique session number for the new file
-  String newFileName;
-  do {
-    newFileName = "/Session-" + String(++maxSessionNumber) + ".csv";
-  } while (SPIFFS.exists(newFileName)); // Check if the new file name exists
+    // Use the direct reading without filtering
+    Serial.print("Reading: ");
+    Serial.print(weight, 1);
+    Serial.print(" lbs");
+    Serial.println();
 
-  // Attempt to create the new file
-  File newFile = SPIFFS.open(newFileName, FILE_WRITE);
-  if (newFile) {
-    Serial.println("Created new file: " + newFileName);
-    newFile.close();
-    return newFileName;
-  } else {
-    Serial.println("Failed to create file: " + newFileName);
-    return "";
-  }
-}
-
-
-
-
-
-
-
-void handleRoot() {
-  String html = "<!DOCTYPE html><html><head><link rel='stylesheet' type='text/css' href='/style.css'><meta name='viewport' content='width=device-width, initial-scale=1'>";
-  html += R"(
-</head><body><script src="/timer.js"></script>
-<h1>GripTracker</h1>
-<form action='/create' method='get'>
-New Session: <input type='text' placeholder='Enter Session Name' name='name'>
-<input type='submit' id='newSessionButton' value='Create New Session'>
-</form>
-<div id='tareButton' class='button-container'><button onclick='tareScale()'>Tare Scale</button></div>
-<br>
-
- <h3>Live Force Reading</h3>
-  <div id="forceValue">0 lbs</div>
-  <script>
-  function updateForce() {
-    fetch('/forceData')
-      .then(response => response.json())
-      .then(data => {
-        document.getElementById('forceValue').innerHTML = data.force + ' lbs';
-      })
-      .catch(error => console.error('Error:', error));
-  }
-
-  setInterval(updateForce, 200); // Update force every second
-  </script><br>
-
-<h3>Hangboard Timer</h3>
-<div id='timerDisplay'>00:00</div>
-<div class=button-container>
-<button onclick='startTimer()'>Start Timer</button>
-<button onclick='stopTimer()'>Stop Timer</button>
-</div>
-
-<select id='protocolSelect' onchange='updateTimerSettings()'>
-<option value='' disabled selected>Select an Exercise</option>
-<option value='climbingRepeater'>Repeaters</option>
-<option value='maxHangs'>Eva Lopez' MaxHangz</option>
-<option value='noHang'>Emil Abrahamsson's No Hangs</option>
-</select>
-
-
-
-<h2>Sessions</h2>
-<div class='session-container'>
-)";
-
-
-
-File root = SPIFFS.open("/");
-File file = root.openNextFile();
-while (file) {
-  String fileName = file.name();
-
-  // Check if the file has a .csv extension
-  if (fileName.endsWith(".csv")) {
-    html += "<p><a href=\"" + fileName + "\">" + fileName + "</a> | <a href=\"/dataView?file=" + fileName + "\">Data Analysis</a> | <a href=\"/rawdata?file=" + fileName + "\">Raw Data</a> | <a href=\"/delete?file=" + fileName + "\">Delete</a></p>";
-  }
-
-  file = root.openNextFile();
-}
-
-html += R"(
-</div>
-<p>---</p><br><p>Made by Ted Bergstrand - 2023</p><br></body></html>
-)";
-
-  server.send(200, "text/html", html);
-}
-
-
-void handleCreate() {
-  String newFileName = "/" + server.arg("name") + ".csv";
-  if (newFileName.length() > 1 && !SPIFFS.exists(newFileName)) {
-    File file = SPIFFS.open(newFileName, FILE_WRITE);
-    if (file) {
-      file.close();
-      currentFileName = newFileName; // Set the new file as the current file
-      server.sendHeader("Location", "/", true); // Redirect to the main page
-      server.send(302, "text/plain", "");
+    // Logic for handling the force reading
+    if (abs(weight) > forceThreshold) {
+        if (!hangInProgress) {
+            // Start tracking a new hang
+            logWeight(weight);
+        } else {
+            // Continue tracking the current hang
+            logWeight(weight);
+        }
     } else {
-      server.send(500, "text/plain", "Error creating file");
+        if (hangInProgress) {
+            float currentEndTime = millis() / 1000.0;
+            if (currentEndTime - currentHang.startTime < 1.0) {
+                // Hang duration is too short, reset the current hang data
+                currentHang.dataLines.clear();
+            } else {
+                // End the current hang session if it's long enough
+                markNewHangSession();
+            }
+            hangInProgress = false;
+        }
     }
-  } else {
-    server.send(400, "text/plain", "Invalid file name or file already exists");
-  }
-}
 
-
-
-
-void handleDelete() {
-  String fileToDelete = "/" + server.arg("file"); // Ensure the file path starts with a slash
-  if (fileToDelete.length() > 1 && SPIFFS.exists(fileToDelete)) { // Check if file exists
-    SPIFFS.remove(fileToDelete); // Delete the file
-    Serial.println("File deleted: " + fileToDelete);
-  } else {
-    Serial.println("File not found: " + fileToDelete);
-  }
-  server.sendHeader("Location", "/", true); // Redirect back to the root page
-  server.send(302, "text/plain", ""); // HTTP status code for redirection
-}
-
-void handleForceData() {
-  scale.set_scale(-4200.00);
-  float weight = scale.get_units() * -1;
-
-  String jsonResponse = "{\"force\": " + String(weight, 1) + "}";
-  server.send(200, "application/json", jsonResponse);
-}
-
-
-
-
-void handleNotFound() {
-  if (loadFromSPIFFS(server.uri())) return;
-  server.send(404, "text/plain", "File Not Found");
-}
-
-
-bool loadFromSPIFFS(String path) {
-  File file = SPIFFS.open(path, "r");
-  if (!file) {
-    return false;
-  }
-
-
-  String contentType = "text/plain";
-  if (path.endsWith(".csv")) {
-    contentType = "text/csv";
-  }
-
-  if (server.streamFile(file, contentType) != file.size()) {
-    Serial.println("Sent less data than expected!");
-  }
-  file.close();
-  return true;
+    server.handleClient();
+    delay(100);
 }
