@@ -1,3 +1,8 @@
+# Changes
+- Separated out CSS and timer JS functions. 
+  - These will need to be uploaded to SPIFFS through Arduino IDE 1 with the ESP32FS 1.1 tool (ESP32 Sketch Data Upload).
+
+
 # GripTracker
 ESP32-based Climbing Hangboard Force Gauge with data collection to CSV and a webserver for management and data viewing. Allows CSV download from the web UI, as well as charting and rudimentary data analysis. Also features a hangboard timer with pre-populated exercises.
 
