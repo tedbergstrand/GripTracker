@@ -21,7 +21,7 @@ void setup() {
 
   // Set up as an Access Point
   const char* ap_ssid = "GripTracker"; // Name of the access point
-  const char* ap_password = "12345678"; // Password for the access point, can be empty for an open network
+  const char* ap_password = ""; // Password for the access point, can be empty for an open network
 
   // Create an Access Point
   WiFi.softAP(ap_ssid, ap_password);
@@ -92,113 +92,36 @@ void handleGetTimerSettings() {
 void handleDataView() {
   String fileName = "/" + server.arg("file");
   if (SPIFFS.exists(fileName)) {
-    // Open the file to read data for the chart
     File file = SPIFFS.open(fileName, "r");
     if (!file) {
       server.send(500, "text/plain", "Error opening file: " + fileName);
       return;
     }
 
-
+    // Prepare HTML for output
     String html = "<!DOCTYPE html><html><head><link rel='stylesheet' type='text/css' href='/style.css'>";
-    html += R"(
-</head>
+    html += "</head><body>";
 
-<body>
-  <!-- Include Google Charts Library -->
-  <script type='text/javascript' src='https://www.gstatic.com/charts/loader.js'></script>
-  <script type='text/javascript'>
-    google.charts.load('current', {'packages':['corechart']});
-    google.charts.setOnLoadCallback(drawChart);
-
-    // JavaScript function to plot the graph
-    function drawChart() {
-      var data = new google.visualization.DataTable();
-      data.addColumn('number', 'Time');
-      data.addColumn('number', 'Force');
-      data.addRows([
-)";
-
-    // Add data rows
-    String tableData = "<table border='1'><tr><th>Time (s)</th><th>Force (lbs)</th></tr>";
-    bool firstLine = true;
-    while (file.available()) {
-      String line = file.readStringUntil('\n');
-      int commaIndex = line.indexOf(',');
-      String timeString = line.substring(0, commaIndex);
-      String forceString = line.substring(commaIndex + 1);
-      if (!firstLine) {
-        html += ",";
-      }
-      html += "[" + timeString + ", " + forceString + "]";
-      tableData += "<tr><td>" + timeString + "</td><td>" + forceString + "</td></tr>";
-      firstLine = false;
-    }
-    file.close();
-
-html += R"(
-]);
-
-var options = {
-  explorer: {
-    actions: ['dragToZoom', 'rightClickToReset'],
-    axis: 'horizontal',
-    keepInBounds: true,
-    maxZoomIn: 10,   // You can adjust this value as needed
-    maxZoomOut: 1     // You can adjust this value as needed
-  },
-  chartArea: {
-    left: 0,
-    top: 0,
-    width: '100%', // Set the width to 100% to fill the container
-    height: '100%' // Set the height to 100% to fill the container
-  },
-  legend: {
-    position: 'none' // This will remove the legend entirely
-  }
-};
-
-var chart = new google.visualization.ScatterChart(document.getElementById('chart_div'));
-chart.draw(data, options);
-}
-
-</script>
-</head><body>
-
-<h1>Data Analysis</h1>
-<div id='chart_div' style='width: 900px; height: 500px;'></div> <!-- Chart container -->
-)";
-
-   
-   
-    file.close(); // Close the file after reading data for the chart
-
-
-    // Reopen the file to calculate the summary
-    file = SPIFFS.open(fileName, "r");
-    if (!file) {
-      server.send(500, "text/plain", "Error opening file for summary: " + fileName);
-      return;
-    }
     // Calculate the summary
     String summary = calculateHangSummary(file);
     file.close(); // Close the file after calculating the summary
 
-
     // Append summary to HTML
     html += "<h2>Hang Data</h2><pre>" + summary + "</pre>";
 
-
+    // Add link back to main page
     html += "<br><a href='/'>Back to Main Page</a>";
 
-
-    // Closing HTML tags and send response
+    // Closing HTML tags
     html += "<p>---</p><br><p>Made by Ted Bergstrand - 2023</p><br></body></html>";
+
+    // Send the HTML response
     server.send(200, "text/html", html);
   } else {
     server.send(404, "text/plain", "File not found");
   }
 }
+
 
 
 
@@ -444,26 +367,30 @@ bool isFileEmpty(const String& fileName) {
 
 
 String createNewFile() {
-  // Set up time and get the current timestamp
-  struct tm timeinfo;
-  if (!getLocalTime(&timeinfo)) {
-    Serial.println("Failed to obtain time");
-    return "";
-  }
+  int maxSessionNumber = 0;
 
-
-  // Format the new file name based on the current time with dashes
-  char buffer[20];
-  strftime(buffer, sizeof(buffer), "%m-%d-%H-%M.csv", &timeinfo);
-  String newFileName = "/" + String(buffer);
-
-
-  // Scan for and delete any empty CSV files
+  // Scan existing files to find the highest session number
   File root = SPIFFS.open("/");
   while (File file = root.openNextFile()) {
-    String fileName = "/" + String(file.name()); // Ensure the filename starts with '/'
+    String fileName = file.name();
+    if (fileName.startsWith("/Session-") && fileName.endsWith(".csv")) {
+      int sessionNumber = fileName.substring(9, fileName.length() - 4).toInt();
+      if (sessionNumber > maxSessionNumber) {
+        maxSessionNumber = sessionNumber;
+      }
+    }
+  }
+
+  // Increment the session number for the new file
+  int newSessionNumber = maxSessionNumber + 1;
+  String newFileName = "/Session-" + String(newSessionNumber) + ".csv";
+
+  // Scan for and delete any empty CSV files
+  root = SPIFFS.open("/"); // Re-open the root directory to refresh file list
+  while (File file = root.openNextFile()) {
+    String fileName = "/" + String(file.name());
     if (fileName.endsWith(".csv") && file.size() == 0) {
-      file.close(); // Close the file before attempting to delete it
+      file.close(); // Close before delete
       if (SPIFFS.remove(fileName)) {
         Serial.println("Deleted empty file: " + fileName);
       } else {
@@ -472,8 +399,7 @@ String createNewFile() {
     }
   }
 
-
-  // Create a new file with the current timestamp
+  // Create the new file
   File newFile = SPIFFS.open(newFileName, FILE_WRITE);
   if (newFile) {
     newFile.close();
