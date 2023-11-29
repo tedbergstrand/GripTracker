@@ -11,216 +11,9 @@
 #define LOADCELL_SCK_PIN   6
 HX711 scale;
 
-
-// WiFi credentials
-const char* ssid = "ActiveClimbing";
-const char* password = "climbsmart";
-
-
 WebServer server(80);
 
-
 String currentFileName;
-
-
-// Define the global JavaScript variable for styles
-const char* globalStyles = R"(
-  <style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-/* Body styles */
-body {
-  font-family: 'Helvetica Neue', Arial, sans-serif;
-  background-color: #f4f4f4;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  color: #333;
-}
-
-/* Header styles */
-h1 {
-  font-size: 32px; /* Adjusted in media query below */
-  font-weight: bold;
-  margin-top: 10px;
-  padding-top: 10px;
-  margin-bottom: 20px;
-}
-
-h2 {
-  font-size: 24px; /* Adjusted in media query below */
-  font-weight: bold;
-  margin-top: 20px;
-  margin-bottom: 20px;
-}
-
-h3 {
-  margin: 20px;
-}
-
-#timerDisplay {
-  padding-bottom: 20px;
-  font-size: 2.5em;
-}
-
-.session-container {
-  line-height: 150%;
-  margin-bottom: 20px;
-}
-
-pre {
-  line-height: 130%;
-  margin-bottom: 20px;
-}
-
-/* Button container */
-.button-container {
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-/* Button styles */
-button {
-  background-color: #007BFF;
-  color: #fff;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 16px; /* Adjusted in media query below */
-  transition: background-color 0.3s ease;
-  margin: 5px;
-  display: inline-block;
-}
-
-button:hover {
-  background-color: #0056b3;
-}
-
-#newSessionButton{
-  display: block;
-  margin: 0 auto;
-  padding: 12px; /* Larger padding for easier interaction */
-  font-size: 16px; /* Larger font size */
-}
-
-#tareButton {
-
-}
-
-/* Links styles */
-a {
-  color: #007BFF;
-  text-decoration: none;
-}
-
-a:hover {
-  text-decoration: underline;
-}
-
-/* Tables styles */
-table {
-  border-collapse: collapse;
-  width: 85%; /* Adjusted in media query below */
-  margin-bottom: 20px;
-}
-
-table, th, td {
-  border: 1px solid #ccc;
-}
-
-th, td {
-  padding: 8px;
-  text-align: left;
-}
-
-th {
-  background-color: #f2f2f2;
-}
-
-#hangAnalysisTable {
-  margin: 0 auto;
-  font-size: 1.8em;
-  max-width: 90%;
-  justify-content: center;
-  text-align: center;
-}
-
-#chart_div {
-  width: 100%;
-  margin-left: 0;
-  margin-right: 0;
-}
-
-/* Form styles */
-form {
-  margin-bottom: 20px;
-}
-
-form input[type="text"] {
-  width: 400px;
-  margin: 0 auto;
-  margin-bottom: 10px;
-  height: 4em;
-}
-
-/* Container styles */
-.container {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 20px; /* Adjusted in media query below */
-}
-
-
-
-    /* Responsive design */
-    @media screen and (max-width: 1028px) {
-      h1 {
-        font-size: 28px; /* Slightly larger font size */
-      }
-
-      h2 {
-        font-size: 20px;
-      }
-
-
-
-      button, input[type="text"], select {
-        padding: 12px; /* Larger padding for easier interaction */
-        font-size: 16px; /* Larger font size */
-      }
-
-      .container, .session-container {
-        padding: 15px;
-        max-width: 100%; /* Full width on smaller screens */
-      }
-
-      .button-container button {
-        width: 100%; /* Full width buttons */
-        margin-bottom: 10px; /* Add space between buttons */
-      }
-
-      form input[type="text"] {
-        width: 95%; /* Full width input fields */
-      }
-
-
-
-    }
-  </style>
-)";
-
-
-
-
-
-
-
 
 void setup() {
   Serial.begin(9600);
@@ -263,6 +56,10 @@ void setup() {
   server.on("/getTimerSettings", HTTP_GET, handleGetTimerSettings);
   server.onNotFound(handleNotFound);
   server.on("/tare", HTTP_GET, handleTare);
+
+  server.serveStatic("/style.css", SPIFFS, "/style.css");
+  server.serveStatic("/timer.js", SPIFFS, "/timer.js");
+  
   server.begin();
   Serial.println("HTTP server started");
 }
@@ -303,8 +100,7 @@ void handleDataView() {
     }
 
 
-    String html = "<!DOCTYPE html><html><head>";
-    html += globalStyles;
+    String html = "<!DOCTYPE html><html><head><link rel='stylesheet' type='text/css' href='/style.css'>";
     html += R"(
 </head>
 
@@ -417,8 +213,7 @@ void handleRawData() {
     }
 
 
-   String html = "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1'>";
-  html += globalStyles;
+   String html = "<!DOCTYPE html><html><head><link rel='stylesheet' type='text/css' href='/style.css'><meta name='viewport' content='width=device-width, initial-scale=1'>";
 
 
   html += "</head><body><h1>Raw Data</h1><table border='1'><tr><th>Time (s)</th><th>Force (lbs)</th></tr>";
@@ -690,10 +485,9 @@ String createNewFile() {
 }
 
 void handleRoot() {
-  String html = "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1'>";
-  html += globalStyles;
+  String html = "<!DOCTYPE html><html><head><link rel='stylesheet' type='text/css' href='/style.css'><meta name='viewport' content='width=device-width, initial-scale=1'>";
   html += R"(
-</head><body>
+</head><body><script src="/timer.js"></script>
 <h1>GripTracker</h1>
 <form action='/create' method='get'>
 New Session: <input type='text' placeholder='Enter Session Name' name='name'>
@@ -716,36 +510,7 @@ New Session: <input type='text' placeholder='Enter Session Name' name='name'>
 <option value='noHang'>Emil Abrahamsson's No Hangs</option>
 </select>
 
-<script>
-function updateTimerSettings() {
-  var protocol = document.getElementById('protocolSelect').value;
-  var xhr = new XMLHttpRequest();
-  xhr.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      var response = JSON.parse(this.responseText);
-      repAmount = response.repAmount;
-      repTime = response.repTime;
-      repRest = response.repRest;
-      setAmount = response.setAmount;
-      setRest = response.setRest;
-      currentRep = 0; currentSet = 0;
-      isHanging = true;
-      currentTime = repTime;
-      updateTimerDisplay();
-    }
-  };
-  xhr.open('GET', '/getTimerSettings?protocol=' + protocol, true);
-  xhr.send();
-}
 
-function tareScale(event) {
-  fetch('/tare')
-    .then(response => response.text())
-    .then(data => console.log(data));
-}
-
-
-</script>
 
 <h2>Sessions</h2>
 <div class='session-container'>
@@ -762,137 +527,6 @@ function tareScale(event) {
   }
 html += R"(
 </div>
-<script>
-let isGettingReady = false;
-let timerInterval; let currentTime = 0;
-let repAmount, repTime, repRest, setAmount, setRest;
-let currentRep = 0; let currentSet = 0; let isHanging = true;
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-function beep(duration = 200, frequency = 520) {
-  console.log('Beep called'); // Debugging
-  let oscillator = audioCtx.createOscillator();
-  let gainNode = audioCtx.createGain();
-  oscillator.connect(gainNode);
-  gainNode.connect(audioCtx.destination);
-  oscillator.frequency.value = frequency;
-  oscillator.start(audioCtx.currentTime);
-  oscillator.stop(audioCtx.currentTime + duration * 0.001);
-}
-
-function updateTimerDisplay() {
-  let displayText;
-  if (isGettingReady) {
-    displayText = 'Get Ready ' + currentTime; // Display "Get Ready" during the get-ready phase
-  } else {
-    displayText = isHanging ? 'Hang ' : 'Rest ';
-    displayText += currentTime;
-  }
-  document.getElementById('timerDisplay').textContent = displayText;
-}
-
-
-function timerTick() {
-  if (isGettingReady) {
-    // Get Ready phase countdown
-    if (currentTime <= 1) {
-      beep(); // Beep at the end of Get Ready phase
-      isGettingReady = false;
-      // Start the actual timer for the exercise
-      currentRep = 0;
-      currentSet = 0;
-      isHanging = true;
-      currentTime = repTime;
-    } else {
-      currentTime--;
-    }
-  } else {
-    // Regular timer phase
-    if (currentTime <= 1) {
-      beep(); // Call beep at every transition
-      if (isHanging) {
-        if (currentRep < repAmount) {
-          isHanging = false;
-          currentTime = (repRest > 0) ? repRest : setRest;
-          currentRep++;
-        } else if (currentSet < setAmount) {
-          currentSet++;
-          currentRep = 0;
-          isHanging = false;
-          currentTime = setRest;
-        } else {
-          stopTimer();
-          return;
-        }
-      } else {
-        isHanging = true;
-        currentTime = repTime;
-      }
-    } else {
-      currentTime--;
-    }
-  }
-  updateTimerDisplay();
-}
-
-function startTimer() {
-  console.log('Attempting to start timer'); // Debugging
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
-  }
-  fetch('/startTimer');
-  
-  // Start the Get Ready phase
-  isGettingReady = true;
-  currentTime = 10; // 10 seconds for the Get Ready phase
-  if (!timerInterval) {
-    console.log('Starting new timer'); // Debugging
-    timerInterval = setInterval(timerTick, 1000);
-    updateTimerDisplay();
-  }
-}
-
-
-function stopTimer() {
-  console.log('Stopping timer'); // Debugging
-  fetch('/stopTimer');
-  if(timerInterval) {
-    clearInterval(timerInterval);
-  }
-  timerInterval = null; // Clear the interval variable
-  currentTime = 0; isHanging = true;
-  currentRep = 0; currentSet = 0; // Reset rep and set counters
-  updateTimerDisplay();
-}
-
-function updateTimerSettings() {
-  var protocolSelect = document.getElementById('protocolSelect');
-  if (!protocolSelect) return; // Early exit if the element is not found
-  var protocol = protocolSelect.value;
-  var xhr = new XMLHttpRequest();
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState == 4 && xhr.status == 200) {
-      try {
-        var response = JSON.parse(xhr.responseText);
-        repAmount = response.repAmount;
-        repTime = response.repTime;
-        repRest = response.repRest;
-        setAmount = response.setAmount;
-        setRest = response.setRest;
-        currentRep = 0;
-        currentSet = 0;
-        isHanging = true;
-        currentTime = repTime;
-        updateTimerDisplay();
-      } catch (e) {
-        console.error('Error parsing JSON:', e); // Log parsing errors
-      }
-    }
-  };
-  xhr.open('GET', '/getTimerSettings?protocol=' + protocol, true);
-  xhr.send();
-}
-</script>
 <p>---</p><br><p>Made by Ted Bergstrand - 2023</p><br></body></html>
 )";
 
