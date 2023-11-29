@@ -13,8 +13,8 @@ HX711 scale;
 
 
 // WiFi credentials
-const char* ssid = "SSID";
-const char* password = "PASSWORD";
+const char* ssid = "ActiveClimbing";
+const char* password = "climbsmart";
 
 
 WebServer server(80);
@@ -226,22 +226,19 @@ void setup() {
   Serial.begin(9600);
   Serial.println("GripTracker");
 
+  // Set up as an Access Point
+  const char* ap_ssid = "GripTrainer"; // Name of the access point
+  const char* ap_password = "12345678"; // Password for the access point, can be empty for an open network
 
-  // Connect to Wi-Fi
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.println("Connecting to WiFi...");
-  }
-  Serial.println("Connected to WiFi");
+  // Create an Access Point
+  WiFi.softAP(ap_ssid, ap_password);
+  Serial.print("Access Point \"");
+  Serial.print(ap_ssid);
+  Serial.println("\" started");
   Serial.print("IP Address: ");
-  Serial.println(WiFi.localIP());
+  Serial.println(WiFi.softAPIP());
 
-
-  configTime(0, 0, "pool.ntp.org"); // Configure NTP client (adjust time offset and NTP server as needed)
-
-
-
+  configTime(0, 0, "pool.ntp.org"); // Configure NTP client
 
   // Initialize SPIFFS
   if (!SPIFFS.begin(true)) {
@@ -249,22 +246,19 @@ void setup() {
     return;
   }
 
-
   // Load cell setup
   scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
   scale.set_scale(-4200.00);
   scale.tare();
 
-
   // Create a new file for this session
   currentFileName = createNewFile();
-
 
   // Start the server with new endpoint
   server.on("/", HTTP_GET, handleRoot);
   server.on("/delete", HTTP_GET, handleDelete);
-  server.on("/rawdata", HTTP_GET, handleRawData); // New endpoint for hang summary
-  server.on("/create", HTTP_GET, handleCreate); // Endpoint for creating a new file
+  server.on("/rawdata", HTTP_GET, handleRawData);
+  server.on("/create", HTTP_GET, handleCreate);
   server.on("/dataView", HTTP_GET, handleDataView);
   server.on("/getTimerSettings", HTTP_GET, handleGetTimerSettings);
   server.onNotFound(handleNotFound);
@@ -272,6 +266,7 @@ void setup() {
   server.begin();
   Serial.println("HTTP server started");
 }
+
 
 void handleTare() {
     scale.tare();
@@ -572,22 +567,13 @@ const int consecutiveReadingsThreshold = 5; // Number of consecutive readings to
 static int consecutiveAboveThresholdCount = 0; // Counter for consecutive readings above threshold
 
 float lastWeight = 0;
-const float spikeThreshold = 12.5; // Spike threshold for filtering (can be adjusted)
 
 void loop() {
     scale.set_scale(-4200.00);
     float weight = scale.get_units() * -1;
 
-    // Filtering method to ignore spikes
-    if (abs(weight - lastWeight) > spikeThreshold) {
-        // Spike detected, ignore this reading
-        weight = lastWeight;  // Use the last valid weight
-    } else {
-        // Valid reading, update lastWeight
-        lastWeight = weight;
-    }
-
-    Serial.print("Filtered Reading: ");
+    // Use the direct reading without filtering
+    Serial.print("Reading: ");
     Serial.print(weight, 1);
     Serial.print(" lbs");
     Serial.println();
@@ -617,6 +603,7 @@ void loop() {
     server.handleClient();
     delay(100);
 }
+
 
 
 
@@ -972,4 +959,3 @@ bool loadFromSPIFFS(String path) {
   file.close();
   return true;
 }
-
