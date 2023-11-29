@@ -252,7 +252,7 @@ void setup() {
 
   // Load cell setup
   scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
-  scale.set_scale(-4065.00);
+  scale.set_scale(-4200.00);
   scale.tare();
 
 
@@ -575,7 +575,7 @@ float lastWeight = 0;
 const float spikeThreshold = 12.5; // Spike threshold for filtering (can be adjusted)
 
 void loop() {
-    scale.set_scale(-4065.00);
+    scale.set_scale(-4200.00);
     float weight = scale.get_units() * -1;
 
     // Filtering method to ignore spikes
@@ -592,7 +592,7 @@ void loop() {
     Serial.print(" lbs");
     Serial.println();
 
-    // Rest of your logic for handling the force reading
+    // Logic for handling the force reading
     if (abs(weight) > forceThreshold) {
         consecutiveAboveThresholdCount++;
 
