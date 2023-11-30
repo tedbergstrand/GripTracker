@@ -1,10 +1,5 @@
-# Changes
-- Separated out CSS and timer JS functions. 
-  - These will need to be uploaded to SPIFFS through Arduino IDE 1 with the ESP32FS 1.1 tool (ESP32 Sketch Data Upload).
-
-
 # GripTracker
-ESP32-based Climbing Hangboard Force Gauge with data collection to CSV and a webserver for management and data viewing. Allows CSV download from the web UI, as well as charting and rudimentary data analysis. Also features a hangboard timer with pre-populated exercises.
+ESP32-based Climbing Hangboard Force Gauge with data collection to CSV and a webserver for management and data viewing. Allows CSV download from the web UI, as well as data display ("Data") and rudimentary analysis ("View"). Also features a hangboard timer with pre-populated exercises.
 
 __This is a prototype and may stay that way forever, depending on how excited I get on improving it. I'd love for your to contribute. I hacked this together over Thanksgiving and I'm not a pro coder, so it could certainly use some love from someone smarter than me. Right now, it's a huge mess of C, HTML, CSS, and JS all in one place and needs to be organized and split up.__
 
@@ -42,28 +37,27 @@ I took the load sensor out of this Fuzion Hanging Crane Scale: https://amzn.to/3
 ---
 
 # Using GripTracker
-- GripTracker automatically begins logging data to a time-stamped CSV file. It will create a new file each time the device turns on.
+- GripTracker automatically begins logging data to a new CSV file each boot. It will create a new file each time the device turns on.
 - New sessions can be started by entering a custom name on the main page.
-- - GripTracker only needs power, not a computer connection
-  - Besides identifying the server's IP address.
+- GripTracker will create a WiFi Access Point called GripTracker-**:**, which you need to connect to in order to use the web UI.
+- GripTracker only needs power, not a computer connection.
+  - Besides identifying the server's IP address, which has always been 192.168.4.1 in my testing.
+- GripTracker displays live force data on the web UI.
 - Tare scale button will zero out the sensor after a grip has been hung on it.
 - Clicking the CSV file will let you download it.
-- Data Analysis gives a zoomable (on desktop) Google chart to visualize the hangs, as well as Duration, Peak Force, Average Force and Standard Deviation for each hang in the session.
-  - To Zoom, left click and select the area you want to zoom in on.
-  - Right Click to return to full view.
+- "View" gives Duration, Peak Force, Average Force and Standard Deviation for each hang in the session.
 - Hangs are automatically separated in the code and adds a "0,NaN" line to the CSV to indicate a new hang.
-- Raw data can be viewed without downloading the CSV.
+- "Data" launches a page to view raw data, separated into Hangs.
 - You are able to delete CSV files through the Web UI. (Note: this is irreversible).
 
 # Hangboard Timer
 - Pre-populated with Repeaters, a version of Eva Lopez' MaxHangz, and Emil Abrahamsson's No Hangs protocols.
 - Select the exercise from the drop-down and click the Start Button.
 - Timer will beep at each transition between Get Ready, Hang, and Rest.
-- The idea is that you'll be able to see differences in your force production over the course of the exercise.
+- The idea is that you'll be able to see differences in your force production over the course of the exercise and compare the same exercise over time.
 
 # Notes
-  - I'm currently filtering the readings because I was experiencing very occasional signals that didn't belong. This may prove to be a poor solution, but it's the best I could come up with for now.
-  - I was having trouble getting the webserver to read external CSS and JS files, so everything is baked into the ESP code, right now. It's ugly, but it works.
+
  
   # To-Do
   - Put CSS and JS into their own files to clean up the ESP code.
