@@ -63,7 +63,7 @@ function listCSVFiles() {
       const container = document.getElementById('session-container');
       container.innerHTML = ''; // Clear current content
       files.forEach(file => {
-        const fileLink = `<p><a href="${file}">${file}</a> <a href="/dataView?file=${file}">View</a> <a href="/rawdata?file=${file}">Data</a> <a class="deleteButton" href="/delete?file=${file}">Delete</a></p>`;
+        const fileLink = `<div class="csvLinks"><p><a href="${file}">${file}</a> <a href="/rawdata?file=${file}">Data</a> <a href="/dataView?file=${file}">View</a> <a class="deleteButton" href="/delete?file=${file}">Delete</a></p>`;
         container.innerHTML += fileLink;
       });
     })

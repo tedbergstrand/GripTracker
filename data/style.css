@@ -81,6 +81,11 @@ button:hover, a:hover {
 margin-bottom:20px;
 }
 
+.csvLinks {
+	padding-top:5px;
+	padding-bottom:5px;
+}
+
 /* Session Links Styles */
 .session-container p > a{
 	margin-left:10px;
@@ -127,6 +132,7 @@ th {
     background-color: #e9ecef;
     color: #333;
 }
+
 
 /* Responsive Design */
 @media screen and (max-width: 768px) {
