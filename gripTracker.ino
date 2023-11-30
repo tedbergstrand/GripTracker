@@ -88,10 +88,18 @@ void setup() {
   server.on("/rawdata", HTTP_GET, handleRawData);
   server.on("/create", HTTP_GET, handleCreate);
   server.on("/dataView", HTTP_GET, handleDataView);
-  server.on("/getTimerSettings", HTTP_GET, handleGetTimerSettings);
+//  server.on("/getTimerSettings", HTTP_GET, handleGetTimerSettings); //Timer dictionary is handled in JS, now.
   server.onNotFound(handleNotFound);
   server.on("/tare", HTTP_GET, handleTare);
   server.on("/forceData", HTTP_GET, handleForceData);
+  server.on("/listCSV", HTTP_GET, handleListCSV);
+  server.on("/getHangSummary", HTTP_GET, handleGetHangSummary);
+  server.on("/getRawData", HTTP_GET, handleGetRawData);
+  server.on("/timers.html", HTTP_GET, handleTimers);
+
+
+
+
 
   server.serveStatic("/style.css", SPIFFS, "/style.css");
   server.serveStatic("/timer.js", SPIFFS, "/timer.js");
@@ -105,74 +113,15 @@ void setup() {
 // Server Endpoint Handlers
 
 void handleRoot() {
-  String html = "<!DOCTYPE html><html><head><link rel='stylesheet' type='text/css' href='/style.css'><meta name='viewport' content='width=device-width, initial-scale=1'>";
-  html += R"(
-</head><body><script src="/timer.js"></script>
-<h1>GripTracker</h1>
-<form action='/create' method='get'>
-New Session: <input type='text' placeholder='Enter Session Name' name='name'>
-<input type='submit' id='newSessionButton' value='Create New Session'>
-</form>
-<div id='tareButton' class='button-container'><button onclick='tareScale()'>Tare Scale</button></div>
-<br>
-
- <h3>Live Force Reading</h3>
-  <div id="forceValue">0 lbs</div>
-  <script>
-  function updateForce() {
-    fetch('/forceData')
-      .then(response => response.json())
-      .then(data => {
-        document.getElementById('forceValue').innerHTML = data.force + ' lbs';
-      })
-      .catch(error => console.error('Error:', error));
+  if(SPIFFS.exists("/index.html")){
+    File file = SPIFFS.open("/index.html", "r");
+    server.streamFile(file, "text/html");
+    file.close();
+  } else {
+    server.send(404, "text/plain", "404: Not Found");
   }
-
-  setInterval(updateForce, 200); // Update force every second
-  </script><br>
-
-<h3>Hangboard Timer</h3>
-<div id='timerDisplay'>00:00</div>
-<div class=button-container>
-<button onclick='startTimer()'>Start Timer</button>
-<button onclick='stopTimer()'>Stop Timer</button>
-</div>
-
-<select id='protocolSelect' onchange='updateTimerSettings()'>
-<option value='' disabled selected>Select an Exercise</option>
-<option value='climbingRepeater'>Repeaters</option>
-<option value='maxHangs'>Eva Lopez' MaxHangz</option>
-<option value='noHang'>Emil Abrahamsson's No Hangs</option>
-</select>
-
-
-
-<h2>Sessions</h2>
-<div class='session-container'>
-)";
-
-
-
-File root = SPIFFS.open("/");
-File file = root.openNextFile();
-while (file) {
-  String fileName = file.name();
-
-  // Check if the file has a .csv extension
-  if (fileName.endsWith(".csv")) {
-    html += "<p><a href=\"" + fileName + "\">" + fileName + "</a> | <a href=\"/dataView?file=" + fileName + "\">Data Analysis</a> | <a href=\"/rawdata?file=" + fileName + "\">Raw Data</a> | <a href=\"/delete?file=" + fileName + "\">Delete</a></p>";
-  }
-
-  file = root.openNextFile();
 }
 
-html += R"(
-</div>
-<p>---</p><br><p>Made by Ted Bergstrand - 2023</p><br></body></html>
-)";
-
-  server.send(200, "text/html", html);
-}
 
 void handleCreate() {
   String newFileName = "/" + server.arg("name") + ".csv";
@@ -204,72 +153,75 @@ void handleDelete() {
 }
 
 void handleRawData() {
-  String fileName = "/" + server.arg("file"); // Ensure the file path starts with a slash
-  if (fileName.length() > 1) {
+  String fileName = "/" + server.arg("file");
+  if (SPIFFS.exists(fileName)) {
+    if(SPIFFS.exists("/rawData.html")){
+      File file = SPIFFS.open("/rawData.html", "r");
+      server.streamFile(file, "text/html");
+      file.close();
+    } else {
+      server.send(404, "text/plain", "404: Not Found");
+    }
+  } else {
+    server.send(404, "text/plain", "File not found");
+  }
+}
+
+void handleGetRawData() {
+  String fileName = "/" + server.arg("file");
+  if (SPIFFS.exists(fileName)) {
     File file = SPIFFS.open(fileName, "r");
     if (!file) {
-      server.send(500, "text/plain", "Error opening file: " + fileName);
+      server.send(500, "text/plain", "Error opening file");
       return;
     }
-
-
-    String html = "<!DOCTYPE html><html><head><link rel='stylesheet' type='text/css' href='/style.css'><meta name='viewport' content='width=device-width, initial-scale=1'>";
-
-
-    html += "</head><body><h1>Raw Data</h1><table border='1'><tr><th>Time (s)</th><th>Force (lbs)</th></tr>";
-
-
-    while (file.available()) {
-      String line = file.readStringUntil('\n');
-      int commaIndex = line.indexOf(',');
-      if (commaIndex != -1) {
-        String timeString = line.substring(0, commaIndex);
-        String forceString = line.substring(commaIndex + 1);
-        html += "<tr><td>" + timeString + "</td><td>" + forceString + "</td></tr>";
-      }
-    }
-
-
-    html += "</table><br><a href='/'>Back to Main Page</a><br><p>---</p><br><p>Made by Ted Bergstrand - 2023</p><br></body></html>";
-
-
-    server.send(200, "text/html", html);
+    server.streamFile(file, "text/plain");
     file.close();
   } else {
-    server.send(400, "text/plain", "No file specified");
+    server.send(404, "text/plain", "File not found");
   }
 }
 
 void handleDataView() {
   String fileName = "/" + server.arg("file");
   if (SPIFFS.exists(fileName)) {
+    if(SPIFFS.exists("/dataView.html")){
+      File file = SPIFFS.open("/dataView.html", "r");
+      server.streamFile(file, "text/html");
+      file.close();
+    } else {
+      server.send(404, "text/plain", "404: Not Found");
+    }
+  } else {
+    server.send(404, "text/plain", "File not found");
+  }
+}
+
+void handleGetHangSummary() {
+  String fileName = "/" + server.arg("file");
+  Serial.println("Requested file: " + fileName); // Debugging line
+
+  if (SPIFFS.exists(fileName)) {
     File file = SPIFFS.open(fileName, "r");
     if (!file) {
       server.send(500, "text/plain", "Error opening file: " + fileName);
       return;
     }
-
-    // Prepare HTML for output
-    String html = "<!DOCTYPE html><html><head><link rel='stylesheet' type='text/css' href='/style.css'>";
-    html += "</head><body>";
-
-    // Calculate the summary
     String summary = calculateHangSummary(file);
-    file.close(); // Close the file after calculating the summary
-
-    // Append summary to HTML
-    html += "<h2>Hang Data</h2><pre>" + summary + "</pre>";
-
-    // Add link back to main page
-    html += "<br><a href='/'>Back to Main Page</a>";
-
-    // Closing HTML tags
-    html += "<p>---</p><br><p>Made by Ted Bergstrand - 2023</p><br></body></html>";
-
-    // Send the HTML response
-    server.send(200, "text/html", html);
+    file.close();
+    server.send(200, "text/plain", summary);
   } else {
     server.send(404, "text/plain", "File not found");
+  }
+}
+
+void handleTimers() {
+  if(SPIFFS.exists("/timers.html")) {
+    File file = SPIFFS.open("/timers.html", "r");
+    server.streamFile(file, "text/html");
+    file.close();
+  } else {
+    server.send(404, "text/plain", "404: Not Found");
   }
 }
 
@@ -286,6 +238,25 @@ void handleGetTimerSettings() {
   }
 
   String jsonResponse = "{\"repAmount\": " + String(repAmount) + ", \"repTime\": " + String(repTime) + ", \"repRest\": " + String(repRest) + ", \"setAmount\": " + String(setAmount) + ", \"setRest\": " + String(setRest) + "}";
+  server.send(200, "application/json", jsonResponse);
+}
+
+void handleListCSV() {
+  File root = SPIFFS.open("/");
+  String jsonResponse = "[";
+  bool first = true;
+
+  while (File file = root.openNextFile()) {
+    String fileName = String(file.name());
+    if (fileName.endsWith(".csv")) {
+      if (!first) {
+        jsonResponse += ",";
+      }
+      jsonResponse += "\"" + fileName + "\"";
+      first = false;
+    }
+  }
+  jsonResponse += "]";
   server.send(200, "application/json", jsonResponse);
 }
 
@@ -473,18 +444,6 @@ void markNewHangSession() {
         currentHang.dataLines.clear();
         hangInProgress = false;
     }
-}
-
-
-bool isFileEmpty(const String& fileName) {
-  File file = SPIFFS.open(fileName, "r");
-  if (!file) {
-    return true; // File doesn't exist or couldn't be opened
-  }
-
-  bool isEmpty = file.size() == 0;
-  file.close();
-  return isEmpty;
 }
 
 
