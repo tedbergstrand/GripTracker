@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel='stylesheet' type='text/css' href='style.css'>
+</head>
+<body>
+  <header>
+    <h1>Hang Data</h1>
+  </header>
+
+  <main>
+    <pre>
+	<div id="hangSummary"></div>
+    </pre>
+  </main>
+
+  <footer>
+    <a href='/'>Back to Main Page</a>
+    <p>Made by Ted Bergstrand - 2023</p>
+  </footer>
+<script>
+function getFileNameFromURL() {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get('file');
+}
+
+function displayHangSummary() {
+  const fileName = getFileNameFromURL();
+
+  if (fileName) {
+    fetch(`/getHangSummary?file=${encodeURIComponent(fileName)}`)
+      .then(response => response.text())
+      .then(summary => {
+        document.getElementById('hangSummary').innerHTML = summary;
+      })
+      .catch(error => console.error('Error:', error));
+  }
+}
+
+document.addEventListener('DOMContentLoaded', displayHangSummary);
+
+</script>
+</body>
+</html>

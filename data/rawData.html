@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel='stylesheet' type='text/css' href='style.css'>
+  <meta name='viewport' content='width=device-width, initial-scale=1'>
+</head>
+<body>
+  <header>
+    <h1>Raw Data</h1>
+  </header>
+
+  <main>
+  <div id="rawDataContainer"></div>
+  </main>
+
+  <footer>
+    <a href='/'>Back to Main Page</a>
+    <p>Made by Ted Bergstrand - 2023</p>
+  </footer>
+<script>
+  function getFileNameFromURL() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('file');
+  }
+
+  function displayRawData() {
+    const fileName = getFileNameFromURL();
+    if (fileName) {
+      fetch(`/getRawData?file=${encodeURIComponent(fileName)}`)
+        .then(response => response.text())
+        .then(data => {
+          const table = parseCSVToTable(data);
+          document.getElementById('rawDataContainer').innerHTML = table;
+        })
+        .catch(error => console.error('Error:', error));
+    }
+  }
+
+function parseCSVToTable(csvData) {
+  const lines = csvData.trim().split('\n');
+  let hangNumber = 1;
+  let currentHangHtml = '';
+  let allHangsHtml = '';
+  let inHang = false;
+  let startTimestamp = 0;
+
+  lines.forEach(line => {
+    const cells = line.split(',');
+
+    // Start of a new hang
+    if (!inHang && cells[0] !== '0') {
+      inHang = true;
+      startTimestamp = parseFloat(cells[0]);
+      currentHangHtml = `<h3>Hang ${hangNumber}</h3>`;
+      currentHangHtml += '<table border="1"><thead><tr><th>Time (s)</th><th>Force (lbs)</th></tr></thead><tbody>';
+    }
+
+    if (inHang) {
+      // If it's a valid data line, add it to the current hang table
+      if (cells.length === 2 && cells[0] !== '0') {
+        let adjustedTime = (parseFloat(cells[0]) - startTimestamp).toFixed(2);
+        currentHangHtml += `<tr><td>${adjustedTime}</td><td>${cells[1]}</td></tr>`;
+      }
+
+      // End of the current hang
+      if (cells[0] === '0') {
+        currentHangHtml += '</tbody></table>';
+        allHangsHtml += currentHangHtml;
+        hangNumber++;
+        inHang = false;
+      }
+    }
+  });
+
+  // Handle the case where the last line isn't "0,NaN"
+  if (inHang) {
+    currentHangHtml += '</tbody></table>';
+    allHangsHtml += currentHangHtml;
+  }
+
+  return allHangsHtml;
+}
+
+
+
+  document.addEventListener('DOMContentLoaded', displayRawData);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel='stylesheet' type='text/css' href='style.css'>
+  <meta name='viewport' content='width=device-width, initial-scale=1'>
+</head>
+<body>
+  <header>
+    <h1>Hangboard Timers</h1>
+  </header>
+
+  <main>
+    <div id='timerDisplay'>00:00</div>
+
+    <select id='protocolSelect' onchange='updateTimerSettings()'>
+      <option value='' disabled selected>Select an Exercise</option>
+      <option value='climbingRepeater'>Repeaters</option>
+      <option value='maxHangs'>Eva Lopez' MaxHangz</option>
+      <option value='noHang'>Emil Abrahamsson's No Hangs</option>
+    </select>
+
+    <div class='button-container'>
+      <button onclick='startTimer()'>Start Timer</button>
+      <button onclick='stopTimer()'>Stop Timer</button>
+    </div>
+
+  </main>
+
+  <footer>
+    <a href='/'>Back to Main Page</a>
+    <p>Made by Ted Bergstrand - 2023</p>
+  </footer>
+
+  <script src="timer.js"></script>
+</body>
+</html>

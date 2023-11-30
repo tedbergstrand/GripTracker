@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel='stylesheet' type='text/css' href='style.css'>
+  <meta name='viewport' content='width=device-width, initial-scale=1'>
+</head>
+<body>
+  <header>
+    <h1>GripTracker</h1>
+  </header>
+
+  <main>
+    <h3>Live Force Reading</h3>
+    <div id='forceValue' style='font-size: 2em;'>0 lbs</div>
+	
+	    <div id='indexButtons' class='button-container'>
+      <button onclick='tareScale()'>Tare Scale</button>
+	  <a href="/timers.html">Hangboard Timers</a>
+    </div>
+	
+<p> --- </p>
+  
+    <form action='/create' method='get'>
+      New Session: <input type='text' placeholder='Enter Session Name' name='name'>
+      <input type='submit' id='newSessionButton' value='Create New Session'>
+    </form>
+
+<p> --- </p>
+
+
+    <h2>Sessions</h2>
+    <div id='session-container'>
+      <!-- Dynamic content goes here -->
+    </div>
+  </main>
+
+  <footer>
+    <p>Made by Ted Bergstrand - 2023</p>
+  </footer>
+
+  <script>
+  function updateForce() {
+  fetch('/forceData')
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById('forceValue').innerHTML = data.force + ' lbs';
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+setInterval(updateForce, 100); // Update force 10 times per second
+
+function tareScale(event) {
+  fetch('/tare')
+    .then(response => response.text())
+    .then(data => console.log(data));
+}
+
+function listCSVFiles() {
+  fetch('/listCSV')
+    .then(response => response.json())
+    .then(files => {
+      const container = document.getElementById('session-container');
+      container.innerHTML = ''; // Clear current content
+      files.forEach(file => {
+        const fileLink = `<p><a href="${file}">${file}</a> <a href="/dataView?file=${file}">View</a> <a href="/rawdata?file=${file}">Data</a> <a class="deleteButton" href="/delete?file=${file}">Delete</a></p>`;
+        container.innerHTML += fileLink;
+      });
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+document.addEventListener('DOMContentLoaded', listCSVFiles); // Call this function when the page loads
+
+  </script>
+</body>
+</html>

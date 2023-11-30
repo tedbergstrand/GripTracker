@@ -1,0 +1,185 @@
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Open Sans', Arial, sans-serif;
+    text-align: center;
+}
+
+body {
+    background-color: #f4f4f6;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+/* Typography */
+h1, h2, h3 {
+    font-weight: 700;
+    margin-bottom: 0.5em;
+    text-align: center;
+    color: #0056b3;
+}
+
+h1 { 
+    font-size: 2.2em; 
+    margin-top: 20px;
+    padding-top: 10px;
+}
+h2 { 
+    font-size: 1.8em; 
+    margin-top: 15px;
+}
+h3 { 
+    font-size: 1.4em; 
+    margin-top: 10px;
+}
+
+#timerDisplay, #forceValue {
+    font-size: 2.5em;
+    color: #28a745;
+    margin: 10px 0;
+}
+
+/* Buttons and Links */
+button, a {
+    background-color: #007bff;
+    color: white;
+    padding: 15px 20px;
+    border: none;
+    border-radius: 5px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 1.1rem;
+    transition: background-color 0.3s, box-shadow 0.3s;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+button:hover, a:hover {
+    background-color: #0056b3;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+}
+
+.button-container {
+    padding-top: 20px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.deleteButton {
+	background-color:red;
+}
+
+#tareButton {
+margin-bottom:20px;
+}
+
+/* Session Links Styles */
+.session-container p > a{
+	margin-left:10px;
+	margin-right:10px;
+	margin-top:5px;
+	margin-bottom:5px;
+}
+
+/* Form Styles */
+form {
+    width: 100%;
+    max-width: 600px;
+    margin: 20px 0;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    border-radius: 8px;
+    background: white;
+}
+
+form input[type="text"], #protocolSelect {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    margin-bottom: 1em;
+    font-size: 1.1em;
+}
+
+/* Table Styles */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+th, td {
+    padding: 0.75em;
+    text-align: left;
+    border: 1px solid #dee2e6;
+}
+
+th {
+    background-color: #e9ecef;
+    color: #333;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+    h1 { font-size: 2em; }
+    h2 { font-size: 1.5em; }
+    h3 { font-size: 1.2em; }
+
+    button, input[type="text"], select {
+        font-size: 1rem;
+        padding: 0.8em;
+    }
+
+    .button-container {
+        padding: 15px;
+        max-width: 100%;
+        flex-direction: column; /* Stack buttons vertically */
+        align-items: stretch; /* Stretch buttons to fill container */
+    }
+
+    .button-container button, form input[type="text"] {
+        width: 100%;
+    }
+
+    /* Button and link adjustments */
+    button, a {
+        font-size: 0.9rem; /* Smaller font size */
+        padding: 8px 12px; /* Reduced padding */
+        margin-bottom: 5px; /* Space between elements */
+    }
+
+    /* Session container adjustments */
+    .session-container p {
+        display: flex; /* Use flexbox for session links */
+        flex-direction: column; /* Stack links vertically */
+        align-items: center; /* Center align items */
+        margin-bottom: 10px; /* Space between session rows */
+    }
+
+    .session-container p > a {
+        margin: 5px 0; /* Space around each link */
+    }
+}
+
+/* Footer */
+footer {
+    margin-top: auto;
+    padding: 15px;
+    text-align: center;
+    width: 100%;
+}
+
+footer p {
+    color: #666;
+	margin-top:10px;
+	margin-bottom:5px;
+}
