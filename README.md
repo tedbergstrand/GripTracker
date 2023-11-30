@@ -57,10 +57,11 @@ I took the load sensor out of this Fuzion Hanging Crane Scale: https://amzn.to/3
 - The idea is that you'll be able to see differences in your force production over the course of the exercise and compare the same exercise over time.
 
 # Notes
-
+- For some reason, when the device restarts, you'll need to disconnect from the WiFi network and reconnect. The web UI doesn't like to load if you stay connected for some reason.
+- Every time I've tested it, the IP for the server has been 192.168.4.1
+  - I assume it is the default and it will be the case for you, as well.
  
-  # To-Do
-  - Put CSS and JS into their own files to clean up the ESP code.
-    - Arduino IDE 2 makes SPIFFS uploading more difficult. I'll split them up, but I will also leave the one-shot code for people who don't want to install 1.8.19 to handle SPIFFS uploading.  
-  - Add instructions for using the Sparkfun sketches for calibration of HX711/Load Sensor to README.
-  - Add photos to README
+# To-Do
+- Add instructions for using the Sparkfun sketches for calibration of HX711/Load Sensor to README.
+- Add photos to README
+- Add one-shot version that has the C++ build the webpages for people who don't want to do SPIFFS upload.
