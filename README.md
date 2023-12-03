@@ -9,7 +9,7 @@ https://github.com/tedbergstrand/GripTracker/assets/113138359/29e9e38e-12b9-4437
 
 __This is a prototype and may stay that way forever, depending on how excited I get on improving it. I'd love for your to contribute. I hacked this together over Thanksgiving and I'm not a pro coder, so it could certainly use some love from someone smarter than me.__
 
-<center><img src="https://github.com/tedbergstrand/GripTracker/assets/113138359/84d90c9d-4fbb-48bf-9c7f-e951f2907dbd" alt="the brains" width="600"></center>
+<img src="https://github.com/tedbergstrand/GripTracker/assets/113138359/84d90c9d-4fbb-48bf-9c7f-e951f2907dbd" alt="the brains" width="600">
 
 
 
@@ -43,7 +43,7 @@ I took the load sensor out of this Fuzion Hanging Crane Scale: https://amzn.to/3
 - The ESP will print the IP address to the serial console when it connects. This is the URL you type into the browser.
 
 ---
-<center><img src="https://github.com/tedbergstrand/GripTracker/assets/113138359/9192a0df-7f57-49b6-aee0-231cb9d2e876" alt="hanging from cage" width="600"></center>
+<img src="https://github.com/tedbergstrand/GripTracker/assets/113138359/d24f8109-4c16-424b-890f-5852be2f6374" alt="hanging from cage" width="600">
 
 # Using GripTracker
 - GripTracker automatically begins logging data to a new CSV file each boot. It will create a new file each time the device turns on.
