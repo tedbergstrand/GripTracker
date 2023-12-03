@@ -29,6 +29,7 @@
 
 
     <h2>Sessions</h2>
+	<div id='activeSession'></div>
     <div id='session-container'>
       <!-- Dynamic content goes here -->
     </div>
@@ -63,15 +64,47 @@ function listCSVFiles() {
       const container = document.getElementById('session-container');
       container.innerHTML = ''; // Clear current content
       files.forEach(file => {
-        const fileLink = `<div class="csvLinks"><p><a href="${file}">${file}</a> <a href="/rawdata?file=${file}">Data</a> <a href="/dataView?file=${file}">View</a> <a class="deleteButton" href="/delete?file=${file}">Delete</a></p>`;
+        const displayName = file.replace('.csv', '').substring(0, 8);
+        const fileLink = `<div class="csvLinks"><p><a href="${file}">${displayName}</a> <a href="/rawdata?file=${file}">Data</a> <a href="/dataView?file=${file}">View</a> <button onclick="resumeSession('${file}')">Resume</button> <a class="deleteButton" href="/delete?file=${file}">Delete</a></p>`;
         container.innerHTML += fileLink;
       });
     })
     .catch(error => console.error('Error:', error));
 }
 
-document.addEventListener('DOMContentLoaded', listCSVFiles); // Call this function when the page loads
 
+function resumeSession(file) {
+  fetch(`/resume?file=${file}`)
+    .then(response => response.text())
+    .then(data => console.log(data))
+    .catch(error => console.error('Error:', error));
+}
+
+// Function to fetch and update the active session
+function updateActiveSession() {
+  fetch('/currentFile')
+    .then(response => response.text())
+    .then(filename => {
+      // Remove the leading '/' and '.csv' extension if they exist
+      if (filename.startsWith('/')) {
+        filename = filename.slice(1);
+      }
+      filename = filename.replace('.csv', '');
+      document.getElementById('activeSession').innerHTML = 'Active Session:  <b>' + filename + '</b>';
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+// Event listener for DOMContentLoaded to run updateActiveSession on page load
+document.addEventListener('DOMContentLoaded', function() {
+  updateActiveSession();
+});
+
+// Update active session every second
+setInterval(updateActiveSession, 1000);
+
+// Call this function when the page loads
+document.addEventListener('DOMContentLoaded', listCSVFiles);
   </script>
 </body>
 </html>

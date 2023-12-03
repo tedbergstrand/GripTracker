@@ -44,6 +44,10 @@ h3 {
     margin: 10px 0;
 }
 
+#activeSession {
+	margin:10px 0;
+}
+
 /* Buttons and Links */
 button, a {
     background-color: #007bff;
