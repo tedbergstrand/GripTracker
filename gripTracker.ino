@@ -96,8 +96,8 @@ void setup() {
   server.on("/getHangSummary", HTTP_GET, handleGetHangSummary);
   server.on("/getRawData", HTTP_GET, handleGetRawData);
   server.on("/timers.html", HTTP_GET, handleTimers);
-
-
+  server.on("/resume", HTTP_GET, handleResume);
+  server.on("/currentFile", HTTP_GET, handleCurrentFile);
 
 
 
@@ -150,6 +150,24 @@ void handleDelete() {
   }
   server.sendHeader("Location", "/", true); // Redirect back to the root page
   server.send(302, "text/plain", ""); // HTTP status code for redirection
+}
+
+void handleResume() {
+  String fileToResume = "/" + server.arg("file");
+  if (fileToResume.length() > 1 && SPIFFS.exists(fileToResume)) {
+    currentFileName = fileToResume;
+    server.send(200, "text/plain", "Resumed session with file: " + fileToResume);
+  } else {
+    server.send(404, "text/plain", "File not found");
+  }
+}
+
+void handleCurrentFile() {
+  if (currentFileName.length() > 0) {
+    server.send(200, "text/plain", currentFileName);
+  } else {
+    server.send(200, "text/plain", "None");
+  }
 }
 
 void handleRawData() {
@@ -309,7 +327,7 @@ String createNewFile() {
     String fileName = file.name();
 
     // Check if the file is a session file
-    if (fileName.startsWith("/Session-") && fileName.endsWith(".csv")) {
+    if (fileName.startsWith("/Set-") && fileName.endsWith(".csv")) {
       int sessionNumber = fileName.substring(9, fileName.length() - 4).toInt();
       if (sessionNumber > maxSessionNumber) {
         maxSessionNumber = sessionNumber; // Update the max session number
@@ -320,7 +338,7 @@ String createNewFile() {
   // Find a unique session number for the new file
   String newFileName;
   do {
-    newFileName = "/Session-" + String(++maxSessionNumber) + ".csv";
+    newFileName = "/Set-" + String(++maxSessionNumber) + ".csv";
   } while (SPIFFS.exists(newFileName)); // Check if the new file name exists
 
   // Attempt to create the new file
