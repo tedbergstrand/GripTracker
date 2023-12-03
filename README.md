@@ -3,7 +3,7 @@ ESP32-based Climbing Hangboard Force Gauge with data collection to CSV and a web
 
 
 
-<center>https://github.com/tedbergstrand/GripTracker/assets/113138359/29e9e38e-12b9-4437-9be8-722f9beec796</center>
+https://github.com/tedbergstrand/GripTracker/assets/113138359/29e9e38e-12b9-4437-9be8-722f9beec796
 
 
 
