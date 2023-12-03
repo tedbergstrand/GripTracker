@@ -9,7 +9,8 @@ https://github.com/tedbergstrand/GripTracker/assets/113138359/29e9e38e-12b9-4437
 
 __This is a prototype and may stay that way forever, depending on how excited I get on improving it. I'd love for your to contribute. I hacked this together over Thanksgiving and I'm not a pro coder, so it could certainly use some love from someone smarter than me.__
 
-![the brains](https://github.com/tedbergstrand/GripTracker/assets/113138359/84d90c9d-4fbb-48bf-9c7f-e951f2907dbd)
+<img src="https://github.com/tedbergstrand/GripTracker/assets/113138359/84d90c9d-4fbb-48bf-9c7f-e951f2907dbd" alt="the brains" width="600">
+
 
 
 # Hardware:
