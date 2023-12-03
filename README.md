@@ -43,7 +43,7 @@ I took the load sensor out of this Fuzion Hanging Crane Scale: https://amzn.to/3
 - The ESP will print the IP address to the serial console when it connects. This is the URL you type into the browser.
 
 ---
-![hanging from cage](https://github.com/tedbergstrand/GripTracker/assets/113138359/9192a0df-7f57-49b6-aee0-231cb9d2e876)
+<img src="https://github.com/tedbergstrand/GripTracker/assets/113138359/9192a0df-7f57-49b6-aee0-231cb9d2e876" alt="hanging from cage" width="600">
 
 # Using GripTracker
 - GripTracker automatically begins logging data to a new CSV file each boot. It will create a new file each time the device turns on.
