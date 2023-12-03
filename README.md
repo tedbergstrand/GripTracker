@@ -3,6 +3,8 @@ ESP32-based Climbing Hangboard Force Gauge with data collection to CSV and a web
 
 __This is a prototype and may stay that way forever, depending on how excited I get on improving it. I'd love for your to contribute. I hacked this together over Thanksgiving and I'm not a pro coder, so it could certainly use some love from someone smarter than me. Right now, it's a huge mess of C, HTML, CSS, and JS all in one place and needs to be organized and split up.__
 
+Charting is removed until I figure out a lightweight way to do it offline.
+
 
 
 # Hardware:
