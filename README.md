@@ -1,9 +1,7 @@
 # GripTracker
-ESP32-based Climbing Hangboard Force Gauge with data collection to CSV and a webserver for management and data viewing. Allows CSV download from the web UI, as well as data display ("Data") and rudimentary analysis ("View"). Also features a hangboard timer with pre-populated exercises.
+ESP32-based Climbing Hangboard Force Gauge with data collection to CSV and a webserver for management and data viewing. Allows CSV download from the web UI, live Force Display, as well as data display with charting ("Data") and rudimentary analysis ("View"). Also features a hangboard timer with pre-populated exercises.
 
 __This is a prototype and may stay that way forever, depending on how excited I get on improving it. I'd love for your to contribute. I hacked this together over Thanksgiving and I'm not a pro coder, so it could certainly use some love from someone smarter than me. Right now, it's a huge mess of C, HTML, CSS, and JS all in one place and needs to be organized and split up.__
-
-Charting is removed until I figure out a lightweight way to do it offline.
 
 
 
@@ -41,15 +39,17 @@ I took the load sensor out of this Fuzion Hanging Crane Scale: https://amzn.to/3
 # Using GripTracker
 - GripTracker automatically begins logging data to a new CSV file each boot. It will create a new file each time the device turns on.
 - New sessions can be started by entering a custom name on the main page.
-- GripTracker will create a WiFi Access Point called GripTracker-**:**, which you need to connect to in order to use the web UI.
+- GripTracker will create a WiFi Access Point called GripTracker, which you need to connect to in order to use the web UI.
 - GripTracker only needs power, not a computer connection.
   - Besides identifying the server's IP address, which has always been 192.168.4.1 in my testing.
-- GripTracker displays live force data on the web UI.
+- GripTracker displays live force data with live charting on the web UI.
+- Force data is logged to CSV file automatically.
+  - Hangs are automatically separated in the code and adds a "0,NaN" line to the CSV to indicate a new hang.
 - Tare scale button will zero out the sensor after a grip has been hung on it.
-- Clicking the CSV file will let you download it.
+- Clicking the Session Name will let you download it.
+- "Data" launches a page to view raw data with charts, separated into Hangs.
 - "View" gives Duration, Peak Force, Average Force and Standard Deviation for each hang in the session.
-- Hangs are automatically separated in the code and adds a "0,NaN" line to the CSV to indicate a new hang.
-- "Data" launches a page to view raw data, separated into Hangs.
+- Resume lets you resume a previous session.
 - You are able to delete CSV files through the Web UI. (Note: this is irreversible).
 
 # Hangboard Timer
@@ -67,3 +67,4 @@ I took the load sensor out of this Fuzion Hanging Crane Scale: https://amzn.to/3
 - Add instructions for using the Sparkfun sketches for calibration of HX711/Load Sensor to README.
 - Add photos to README
 - Add one-shot version that has the C++ build the webpages for people who don't want to do SPIFFS upload.
+  - This won't happen til I'm sure I'm happy with the code, because it will be a pain to modify.
