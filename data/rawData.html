@@ -3,6 +3,7 @@
 <head>
   <link rel='stylesheet' type='text/css' href='style.css'>
   <meta name='viewport' content='width=device-width, initial-scale=1'>
+  <script src="chart.js"></script>
 </head>
 <body>
   <header>
@@ -29,59 +30,80 @@
       fetch(`/getRawData?file=${encodeURIComponent(fileName)}`)
         .then(response => response.text())
         .then(data => {
-          const table = parseCSVToTable(data);
-          document.getElementById('rawDataContainer').innerHTML = table;
+          const hangData = parseCSVToTableAndCharts(data);
+          document.getElementById('rawDataContainer').innerHTML = hangData.html;
+          initializeCharts(hangData.charts);
         })
         .catch(error => console.error('Error:', error));
     }
   }
 
-function parseCSVToTable(csvData) {
-  const lines = csvData.trim().split('\n');
-  let hangNumber = 1;
-  let currentHangHtml = '';
-  let allHangsHtml = '';
-  let inHang = false;
-  let startTimestamp = 0;
+  function parseCSVToTableAndCharts(csvData) {
+    const lines = csvData.trim().split('\n');
+    let hangNumber = 1;
+    let currentHangHtml = '';
+    let allHangsHtml = '';
+    let inHang = false;
+    let startTimestamp = 0;
+    let chartsData = [];
 
-  lines.forEach(line => {
-    const cells = line.split(',');
+    lines.forEach((line, index) => {
+      const cells = line.split(',');
 
-    // Start of a new hang
-    if (!inHang && cells[0] !== '0') {
-      inHang = true;
-      startTimestamp = parseFloat(cells[0]);
-      currentHangHtml = `<h3>Hang ${hangNumber}</h3>`;
-      currentHangHtml += '<table border="1"><thead><tr><th>Time (s)</th><th>Force (lbs)</th></tr></thead><tbody>';
-    }
+      // Start of a new hang
+      if (!inHang && cells[0] !== '0') {
+        inHang = true;
+        startTimestamp = parseFloat(cells[0]);
+        currentHangHtml = `<h3>Hang ${hangNumber}</h3><canvas id="hangChart${hangNumber}"></canvas>`;
+        currentHangHtml += '<table border="1"><thead><tr><th>Time (s)</th><th>Force (lbs)</th></tr></thead><tbody>';
+        chartsData.push({hangNumber: hangNumber, labels: [], data: []});
+      }
 
+      if (inHang) {
+        // If it's a valid data line, add it to the current hang table and chart data
+        if (cells.length === 2 && cells[0] !== '0') {
+          let adjustedTime = (parseFloat(cells[0]) - startTimestamp).toFixed(2);
+          currentHangHtml += `<tr><td>${adjustedTime}</td><td>${cells[1]}</td></tr>`;
+          chartsData[chartsData.length - 1].labels.push(adjustedTime);
+          chartsData[chartsData.length - 1].data.push(cells[1]);
+        }
+
+        // End of the current hang
+        if (cells[0] === '0') {
+          currentHangHtml += '</tbody></table>';
+          allHangsHtml += currentHangHtml;
+          hangNumber++;
+          inHang = false;
+        }
+      }
+    });
+
+    // Handle the case where the last line isn't "0,NaN"
     if (inHang) {
-      // If it's a valid data line, add it to the current hang table
-      if (cells.length === 2 && cells[0] !== '0') {
-        let adjustedTime = (parseFloat(cells[0]) - startTimestamp).toFixed(2);
-        currentHangHtml += `<tr><td>${adjustedTime}</td><td>${cells[1]}</td></tr>`;
-      }
-
-      // End of the current hang
-      if (cells[0] === '0') {
-        currentHangHtml += '</tbody></table>';
-        allHangsHtml += currentHangHtml;
-        hangNumber++;
-        inHang = false;
-      }
+      currentHangHtml += '</tbody></table>';
+      allHangsHtml += currentHangHtml;
     }
-  });
 
-  // Handle the case where the last line isn't "0,NaN"
-  if (inHang) {
-    currentHangHtml += '</tbody></table>';
-    allHangsHtml += currentHangHtml;
+    return {html: allHangsHtml, charts: chartsData};
   }
 
-  return allHangsHtml;
-}
-
-
+  function initializeCharts(chartsData) {
+    chartsData.forEach(chartData => {
+      const ctx = document.getElementById(`hangChart${chartData.hangNumber}`).getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: chartData.labels,
+          datasets: [{
+            label: `Hang ${chartData.hangNumber} Force`,
+            data: chartData.data,
+            borderColor: 'rgb(75, 192, 192)',
+            tension: 0.1
+          }]
+        }
+      });
+    });
+  }
 
   document.addEventListener('DOMContentLoaded', displayRawData);
 </script>

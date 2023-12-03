@@ -18,6 +18,10 @@
 	  <a href="/timers.html">Hangboard Timers</a>
     </div>
 	
+	<div id='chartContainer' style='width: 80%; margin: auto;'>
+  <canvas id='forceChart'></canvas>
+</div>
+	
 <p> --- </p>
   
     <form action='/create' method='get'>
@@ -38,18 +42,90 @@
   <footer>
     <p>Made by Ted Bergstrand - 2023</p>
   </footer>
-
+  <script src="chart.js"></script>
   <script>
-  function updateForce() {
+let forceChart;
+let forceData = [];
+let forceLabels = [];
+let belowThresholdCount = 0;
+const forceThreshold = 2.5;
+
+function initializeChart() {
+  const ctx = document.getElementById('forceChart').getContext('2d');
+  forceChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: forceLabels,
+      datasets: [{
+        label: 'Live Force (lbs)',
+        backgroundColor: 'rgba(0, 123, 255, 0.5)',
+        borderColor: 'rgba(0, 123, 255, 1)',
+        data: forceData,
+      }],
+    },
+    options: {
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+}
+
+function updateForce() {
   fetch('/forceData')
     .then(response => response.json())
     .then(data => {
       document.getElementById('forceValue').innerHTML = data.force + ' lbs';
+      if(forceChart) {
+        updateChartData(data.force);
+      }
     })
     .catch(error => console.error('Error:', error));
 }
 
-setInterval(updateForce, 100); // Update force 10 times per second
+let hanging = false;
+
+function updateChartData(force) {
+
+  const forceValue = parseFloat(force);
+
+  if (hanging) { 
+    forceData.push(forceValue);
+    forceLabels.push(forceData.length);
+  }
+
+  if (forceValue <= forceThreshold) {
+    belowThresholdCount++;
+  } else {
+    belowThresholdCount = 0;
+  }
+
+  if (belowThresholdCount >= 4) {
+    hanging = false;
+  }
+  
+  if (!hanging && forceValue > forceThreshold) {
+    hanging = true;
+	forceData = [0, forceValue];
+	forceLabels = [1, 2];
+    forceChart.destroy();
+    initializeChart();
+  }
+
+  if (forceData.length > 150) { 
+     forceData.shift();
+     forceLabels.shift();
+  }
+
+  if (forceChart) {
+    forceChart.update();  
+  }
+
+}
+
+
 
 function tareScale(event) {
   fetch('/tare')
@@ -95,16 +171,15 @@ function updateActiveSession() {
     .catch(error => console.error('Error:', error));
 }
 
-// Event listener for DOMContentLoaded to run updateActiveSession on page load
+
+// Event listener for DOMContentLoaded
 document.addEventListener('DOMContentLoaded', function() {
+  initializeChart();
   updateActiveSession();
+  listCSVFiles();
+  setInterval(updateForce, 80); // Update force every 80 ms
 });
 
-// Update active session every second
-setInterval(updateActiveSession, 1000);
-
-// Call this function when the page loads
-document.addEventListener('DOMContentLoaded', listCSVFiles);
   </script>
 </body>
 </html>
