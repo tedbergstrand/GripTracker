@@ -10,6 +10,7 @@
 
   <main>
     <pre>
+	<div id="sessionSummary"></div>
 	<div id="hangSummary"></div>
     </pre>
   </main>
@@ -24,18 +25,186 @@ function getFileNameFromURL() {
   return urlParams.get('file');
 }
 
+
 function displayHangSummary() {
   const fileName = getFileNameFromURL();
 
   if (fileName) {
-    fetch(`/getHangSummary?file=${encodeURIComponent(fileName)}`)
+    fetch(`/getRawData?file=${encodeURIComponent(fileName)}`)
       .then(response => response.text())
-      .then(summary => {
-        document.getElementById('hangSummary').innerHTML = summary;
+      .then(csvData => {
+        let lines = csvData.split('\n');
+        let hangs = processHangs(lines);
+
+        // Average Force Consistency
+        let avgForces = hangs.map(hang => parseFloat(calculateAverageForce(hang.totalForce, hang.countReadings)));
+        let meanAvgForce = calculateAverage(avgForces);
+        let avgForceConsistency = calculateStdDev(avgForces, meanAvgForce);
+        let avgForceConsistencyPercentage = (100 - (avgForceConsistency / meanAvgForce * 100)).toFixed(2);
+        
+        // Peak Force Consistency
+        let peakForces = hangs.map(hang => hang.peakForce);
+        let meanPeakForce = calculateAverage(peakForces);
+        let peakForceConsistency = calculateStdDev(peakForces, meanPeakForce);
+        let peakForceConsistencyPercentage = (100 - (peakForceConsistency / meanPeakForce * 100)).toFixed(2);
+        
+        // Update Session Summary
+        document.getElementById('sessionSummary').innerHTML = `
+          <p>Avg Force Consitency: ${avgForceConsistencyPercentage}%</p>
+          <p>Peak Force Consistency: ${peakForceConsistencyPercentage}%</p>
+        `;
+
+        const hangSummary = generateHangSummary(hangs);
+        document.getElementById('hangSummary').innerHTML = hangSummary;
       })
       .catch(error => console.error('Error:', error));
   }
 }
+
+
+
+function generateHangSummary(hangs) {
+  let hangSummary = "<table id='hangAnalysisTable' border='1'><tr><th>Hang</th><th>Duration (s)</th><th>Peak Force (lbs)</th><th>Average Force (lbs)</th><th>Std Dev (lbs)</th><th>Peak RFD</th><th>Overall RFD</th></tr>"; // Added a new header for Overall RFD
+
+  hangs.forEach(hang => {
+    const avgForce = calculateAverageForce(hang.totalForce, hang.countReadings);
+    const stdDev = calculateStdDev(hang.forces, avgForce);
+    hangSummary += `<tr><td>${hang.hangCount}</td><td>${hang.hangDuration.toFixed(2)}</td><td>${hang.peakForce}</td><td>${avgForce}</td><td>${stdDev}</td><td>${hang.rfd}</td><td>${hang.overallRFD}</td></tr>`; // Added Overall RFD data
+  });
+
+  hangSummary += "</table>";
+  return hangSummary;
+}
+
+
+function processHangs(lines) {
+  let hangCount = 1, newHang = true, hangInProgress = false;
+  let startTime = 0.0, endTime = 0.0, currentTime = 0.0;
+  let hangs = [];
+
+  this.forces = [];
+  this.times = [];
+
+  lines.forEach(line => {
+    let [timeString, forceString] = line.split(',');
+    if (forceString !== "NaN" && timeString !== "0") {
+      let force = parseFloat(forceString);
+      currentTime = parseFloat(timeString);
+
+      if (newHang) {
+        if (hangInProgress) {
+          let newHang = createHang(hangCount, startTime, endTime, this.forces, this.times);
+          if (!isNaN(newHang.peakForce) && !isNaN(newHang.totalForce)) {
+            hangs.push(newHang);
+            hangCount++;
+          }
+        }
+
+        hangInProgress = true;
+        newHang = false;
+        this.forces = [force];
+        this.times = [currentTime]; // Initialize times array with the current time
+        startTime = currentTime;
+        this.peakForce = force;
+        this.totalForce = force;
+        this.countReadings = 1;
+      } else {
+        this.forces.push(force);
+        this.times.push(currentTime); // Add current time to times array
+        this.peakForce = Math.max(this.peakForce, force);
+        this.totalForce += force;
+        this.countReadings++;
+      }
+
+      endTime = currentTime;
+    } else {
+      newHang = true;
+    }
+  });
+
+  if (hangInProgress) {
+    let newHang = createHang(hangCount, startTime, endTime, this.forces, this.times);
+    if (!isNaN(newHang.peakForce) && !isNaN(newHang.totalForce)) {
+      hangs.push(newHang);
+    }
+  }
+
+  return hangs;
+}
+
+
+function createHang(hangCount, startTime, endTime, forces, times) {
+  let rfd = calculateRFD(forces, times);
+  let overallRFD = calculateOverallRFD(forces, times, this.peakForce); // New line
+  let timeToPeakForce = calculateTimeToPeakForce(this.peakForce, forces, times);
+  return {
+    hangCount: hangCount,
+    hangDuration: endTime - startTime,
+    peakForce: this.peakForce,
+    totalForce: this.totalForce,
+    countReadings: this.countReadings,
+    forces: forces,
+    rfd: rfd,
+    overallRFD: overallRFD, // Add this line
+    timeToPeakForce: timeToPeakForce
+  };
+}
+
+
+function calculateAverageForce(totalForce, countReadings) {
+  return (totalForce / countReadings).toFixed(2);
+}
+
+function calculateStdDev(values, mean) {
+  let sum = values.reduce((acc, value) => acc + Math.pow(value - mean, 2), 0);
+  return (Math.sqrt(sum / values.length)).toFixed(2);
+}
+
+function calculateRFD(forces, times) {
+  let maxRFD = 0;
+  for (let i = 1; i < forces.length; i++) {
+    let forceDiff = forces[i] - forces[i - 1];
+    let timeDiff = times[i] - times[i - 1];
+    let rfd = forceDiff / timeDiff;
+    if (rfd > maxRFD) {
+      maxRFD = rfd;
+    }
+  }
+  return maxRFD.toFixed(2);
+}
+
+function calculateOverallRFD(forces, times, peakForce) {
+  let initialForce = forces[0];
+  let timeToPeakForce = 0;
+
+  // Find the time at which peak force is reached
+  for (let i = 0; i < forces.length; i++) {
+    if (forces[i] === peakForce) {
+      timeToPeakForce = times[i] - times[0];
+      break;
+    }
+  }
+
+  // Calculate the overall RFD
+  let overallRFD = (peakForce - initialForce) / timeToPeakForce;
+  return overallRFD.toFixed(2);
+}
+
+
+function calculateTimeToPeakForce(peakForce, forces, times) {
+  for (let i = 0; i < forces.length; i++) {
+    if (forces[i] === peakForce) {
+      return (times[i] - times[0]).toFixed(2);
+    }
+  }
+  return 0; // In case peak force is not found, which should not happen.
+}
+
+function calculateAverage(values) {
+  let sum = values.reduce((a, b) => a + b, 0);
+  return sum / values.length;
+}
+
 
 document.addEventListener('DOMContentLoaded', displayHangSummary);
 

@@ -38,54 +38,72 @@
     }
   }
 
-  function parseCSVToTableAndCharts(csvData) {
-    const lines = csvData.trim().split('\n');
-    let hangNumber = 1;
-    let currentHangHtml = '';
-    let allHangsHtml = '';
-    let inHang = false;
-    let startTimestamp = 0;
-    let chartsData = [];
+function parseCSVToTableAndCharts(csvData) {
+  const lines = csvData.trim().split('\n');
+  let hangNumber = 1;
+  let currentHangHtml = '';
+  let allHangsHtml = '';
+  let inHang = false;
+  let startTimestamp = 0, previousForce = 0, previousTime = 0;
+  let chartsData = [];
 
-    lines.forEach((line, index) => {
-      const cells = line.split(',');
+  lines.forEach((line, index) => {
+    const cells = line.split(',');
 
-      // Start of a new hang
-      if (!inHang && cells[0] !== '0') {
-        inHang = true;
-        startTimestamp = parseFloat(cells[0]);
-        currentHangHtml = `<h3>Hang ${hangNumber}</h3><canvas id="hangChart${hangNumber}"></canvas>`;
-        currentHangHtml += '<table border="1"><thead><tr><th>Time (s)</th><th>Force (lbs)</th></tr></thead><tbody>';
-        chartsData.push({hangNumber: hangNumber, labels: [], data: []});
-      }
-
-      if (inHang) {
-        // If it's a valid data line, add it to the current hang table and chart data
-        if (cells.length === 2 && cells[0] !== '0') {
-          let adjustedTime = (parseFloat(cells[0]) - startTimestamp).toFixed(2);
-          currentHangHtml += `<tr><td>${adjustedTime}</td><td>${cells[1]}</td></tr>`;
-          chartsData[chartsData.length - 1].labels.push(adjustedTime);
-          chartsData[chartsData.length - 1].data.push(cells[1]);
-        }
-
-        // End of the current hang
-        if (cells[0] === '0') {
-          currentHangHtml += '</tbody></table>';
-          allHangsHtml += currentHangHtml;
-          hangNumber++;
-          inHang = false;
-        }
-      }
-    });
-
-    // Handle the case where the last line isn't "0,NaN"
-    if (inHang) {
-      currentHangHtml += '</tbody></table>';
-      allHangsHtml += currentHangHtml;
+    // Start of a new hang
+    if (!inHang && cells[0] !== '0') {
+      inHang = true;
+      startTimestamp = parseFloat(cells[0]);
+      previousTime = startTimestamp;
+      previousForce = 0;
+      currentHangHtml = `<h3>Hang ${hangNumber}</h3><canvas id="hangChart${hangNumber}"></canvas>`;
+      currentHangHtml += '<table border="1"><thead><tr><th>Time (s)</th><th>Force (lbs)</th><th>RFD (lbs/s)</th></tr></thead><tbody>';
+      chartsData.push({hangNumber: hangNumber, labels: [], data: []});
     }
 
-    return {html: allHangsHtml, charts: chartsData};
+    if (inHang) {
+      // If it's a valid data line, add it to the current hang table and chart data
+      if (cells.length === 2 && cells[0] !== '0') {
+        let currentTime = parseFloat(cells[0]);
+        let currentForce = parseFloat(cells[1]);
+        let adjustedTime = (currentTime - startTimestamp).toFixed(2);
+        let timeDifference = currentTime - previousTime;
+
+        let rfd;
+        if (timeDifference === 0) {
+          rfd = "N/A";
+        } else {
+          rfd = ((currentForce - previousForce) / timeDifference).toFixed(2);
+        }
+
+        currentHangHtml += `<tr><td>${adjustedTime}</td><td>${currentForce}</td><td>${rfd}</td></tr>`;
+        chartsData[chartsData.length - 1].labels.push(adjustedTime);
+        chartsData[chartsData.length - 1].data.push(currentForce);
+
+        previousTime = currentTime;
+        previousForce = currentForce;
+      }
+
+      // End of the current hang
+      if (cells[0] === '0') {
+        currentHangHtml += '</tbody></table>';
+        allHangsHtml += currentHangHtml;
+        hangNumber++;
+        inHang = false;
+      }
+    }
+  });
+
+  // Handle the case where the last line isn't "0,NaN"
+  if (inHang) {
+    currentHangHtml += '</tbody></table>';
+    allHangsHtml += currentHangHtml;
   }
+
+  return {html: allHangsHtml, charts: chartsData};
+}
+
+
 
   function initializeCharts(chartsData) {
     chartsData.forEach(chartData => {
