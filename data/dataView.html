@@ -2,6 +2,7 @@
 <html>
 <head>
   <link rel='stylesheet' type='text/css' href='style.css'>
+  <meta name='viewport' content='width=device-width, initial-scale=1'>
 </head>
 <body>
   <header>
@@ -36,32 +37,56 @@ function displayHangSummary() {
         let lines = csvData.split('\n');
         let hangs = processHangs(lines);
 
-        // Average Force Consistency
-        let avgForces = hangs.map(hang => parseFloat(calculateAverageForce(hang.totalForce, hang.countReadings)));
-        let meanAvgForce = calculateAverage(avgForces);
-        let avgForceConsistency = calculateStdDev(avgForces, meanAvgForce);
-        let avgForceConsistencyPercentage = (100 - (avgForceConsistency / meanAvgForce * 100)).toFixed(2);
-        
-        // Peak Force Consistency
-        let peakForces = hangs.map(hang => hang.peakForce);
-        let meanPeakForce = calculateAverage(peakForces);
-        let peakForceConsistency = calculateStdDev(peakForces, meanPeakForce);
-        let peakForceConsistencyPercentage = (100 - (peakForceConsistency / meanPeakForce * 100)).toFixed(2);
-        
-        // Update Session Summary
-        document.getElementById('sessionSummary').innerHTML = `
-          <p>Avg Force Consitency: ${avgForceConsistencyPercentage}%</p>
-          <p>Peak Force Consistency: ${peakForceConsistencyPercentage}%</p>
-        `;
+        // Update Overall Session Summary
+        const overallSummary = generateOverallSummary(hangs);
+        document.getElementById('sessionSummary').innerHTML = overallSummary;
 
-        const hangSummary = generateHangSummary(hangs);
-        document.getElementById('hangSummary').innerHTML = hangSummary;
+        // Update Individual Hang Summaries
+        const hangDetails = hangs.map(hang => generateIndividualHangSummary(hang)).join('');
+        document.getElementById('hangSummary').innerHTML = hangDetails;
       })
       .catch(error => console.error('Error:', error));
   }
 }
 
+function generateOverallSummary(hangs) {
+  let avgForces = hangs.map(hang => parseFloat(calculateAverageForce(hang.totalForce, hang.countReadings)));
+  let meanAvgForce = calculateAverage(avgForces);
+  let avgForceConsistency = calculateStdDev(avgForces, meanAvgForce);
+  let avgForceConsistencyPercentage = (100 - (avgForceConsistency / meanAvgForce * 100)).toFixed(2);
 
+  let peakForces = hangs.map(hang => hang.peakForce);
+  let meanPeakForce = calculateAverage(peakForces);
+  let peakForceConsistency = calculateStdDev(peakForces, meanPeakForce);
+  let peakForceConsistencyPercentage = (100 - (peakForceConsistency / meanPeakForce * 100)).toFixed(2);
+
+  return `
+  	<h2 id="sessionHeading">Session Metrics</h2>
+	<div id="sessionDetail">
+	  <p class="metricLabel">Avg Force Consistency:</p><p class="metricValue">${avgForceConsistencyPercentage}%</p>
+	  <p class="metricLabel">Peak Force Consistency:</p><p class="metricValue">${peakForceConsistencyPercentage}%</p>
+	</div>
+  `;
+}
+
+function generateIndividualHangSummary(hang) {
+  const avgForce = calculateAverageForce(hang.totalForce, hang.countReadings);
+  const stdDev = calculateStdDev(hang.forces, avgForce);
+
+  return `
+	<details class="hangDetail" open>
+	  <summary>Hang ${hang.hangCount} Metrics</summary><div>
+		<span><p class="metricLabel">Duration:</p><p class="metricValue">${hang.hangDuration.toFixed(2)} s</p></span>
+		<span><p class="metricLabel">Peak Force:</p><p class="metricValue">${hang.peakForce} lbs</p></span>
+		<span><p class="metricLabel">Average Force:</p><p class="metricValue">${avgForce} lbs</p></span>
+		<span><p class="metricLabel">Standard Deviation:</p><p class="metricValue">${stdDev} lbs</p></span>
+		<span><p class="metricLabel">Peak RFD:</p><p class="metricValue">${hang.rfd} lbs/s</p></span>
+		<span><p class="metricLabel">Overall RFD:</p><p class="metricValue">${hang.overallRFD} lbs/s</p></span>
+		<!-- Add more individual metrics here -->
+	  </div>
+	</details>
+  `;
+}
 
 function generateHangSummary(hangs) {
   let hangSummary = "<table id='hangAnalysisTable' border='1'><tr><th>Hang</th><th>Duration (s)</th><th>Peak Force (lbs)</th><th>Average Force (lbs)</th><th>Std Dev (lbs)</th><th>Peak RFD</th><th>Overall RFD</th></tr>"; // Added a new header for Overall RFD

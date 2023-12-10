@@ -29,23 +29,15 @@ h1 {
     margin-top: 20px;
     padding-top: 10px;
 }
+
 h2 { 
     font-size: 1.8em; 
     margin-top: 15px;
 }
+
 h3 { 
     font-size: 1.4em; 
     margin-top: 10px;
-}
-
-#timerDisplay, #forceValue {
-    font-size: 2.5em;
-    color: #28a745;
-    margin: 10px 0;
-}
-
-#activeSession {
-	margin:10px 0;
 }
 
 /* Buttons and Links */
@@ -92,10 +84,7 @@ margin-bottom:20px;
 
 /* Session Links Styles */
 .session-container p > a{
-	margin-left:10px;
-	margin-right:10px;
-	margin-top:5px;
-	margin-bottom:5px;
+	margin: 5px 10px;
 }
 
 /* Form Styles */
@@ -137,7 +126,6 @@ th {
     color: #333;
 }
 
-
 /* Responsive Design */
 @media screen and (max-width: 768px) {
     h1 { font-size: 2em; }
@@ -152,31 +140,29 @@ th {
     .button-container {
         padding: 15px;
         max-width: 100%;
-        flex-direction: column; /* Stack buttons vertically */
-        align-items: stretch; /* Stretch buttons to fill container */
+        flex-direction: column;
+        align-items: stretch;
     }
 
     .button-container button, form input[type="text"] {
         width: 100%;
     }
 
-    /* Button and link adjustments */
     button, a {
-        font-size: 0.9rem; /* Smaller font size */
-        padding: 8px 12px; /* Reduced padding */
-        margin-bottom: 5px; /* Space between elements */
+        font-size: 0.9rem;
+        padding: 8px 12px;
+        margin-bottom: 5px;
     }
 
-    /* Session container adjustments */
     .session-container p {
-        display: flex; /* Use flexbox for session links */
-        flex-direction: column; /* Stack links vertically */
-        align-items: center; /* Center align items */
-        margin-bottom: 10px; /* Space between session rows */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 10px;
     }
 
     .session-container p > a {
-        margin: 5px 0; /* Space around each link */
+        margin: 5px 0;
     }
 }
 
@@ -192,4 +178,139 @@ footer p {
     color: #666;
 	margin-top:10px;
 	margin-bottom:5px;
+}
+
+/* Additional Styles */
+
+/* Timer and Force Value Styles */
+#timerDisplay, #forceValue {
+    font-size: 2.5em;
+    color: #28a745;
+    margin: 10px 0;
+}
+
+#activeSession {
+    margin: 10px 0;
+}
+
+/* Session Detail Styles */
+#sessionDetail {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin: 10px 0;
+}
+
+#sessionDetail .metricLabel, #sessionDetail .metricValue {
+    margin-bottom: 5px;
+    padding: 5px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#sessionDetail .metricValue {
+    background-color: #f8f9fa;
+}
+
+/* Hang Detail Styles */
+.hangDetail > div {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.hangDetail .metricLabel, .hangDetail .metricValue {
+    padding: 8px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.hangDetail .metricValue {
+    background-color: #fff;
+}
+
+/* Enhance Summary Styles for better visibility */
+.hangDetail summary {
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border-radius: 4px;
+    margin-top: -25px;
+}
+
+/* Typography and color improvements */
+.metricLabel {
+    color: #495057;
+    font-weight: bold;
+}
+
+.metricValue {
+    color: #333;
+}
+
+/* Consistency in margin and padding */
+#sessionDetail p, .hangDetail p {
+    margin: 5px 0;
+}
+
+/* Hover effects for interactivity */
+.hangDetail summary:hover {
+    background-color: #0056b3;
+    cursor: pointer;
+}
+
+/* Base container styles */
+#sessionDetail, .hangDetail > div {
+    max-width: 90%;
+    width: auto;
+    margin: 0 auto;
+    margin-top: -20px;
+}
+
+.hangDetail div {
+    margin-top: -25px;
+}
+
+/* Responsive Design Adjustments for Mobile Devices */
+@media screen and (max-width: 768px) {
+    #sessionDetail, .hangDetail > div {
+        grid-template-columns: 1fr;
+    }
+
+    .metricLabel, .metricValue {
+        font-size: 0.9em;
+    }
+
+    .hangDetail summary {
+        font-size: 1em;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    #sessionDetail, .hangDetail > div {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+#sessionHeading {
+    margin-bottom: 0px;
+    padding-bottom: 0px;
+}
+
+#sessionDetail {
+	margin-bottom: -45px;
+}
+
+.hangDetail {
+	margin-bottom: -25px;
 }
