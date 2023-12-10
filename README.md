@@ -1,3 +1,5 @@
+This branch is where I put my incremental changes until I decide they're ready to be baked in.
+
 # GripTracker
 ESP32-based Climbing Hangboard Force Gauge with data collection to CSV and a webserver for management and data viewing. Allows CSV download from the web UI, live Force Display, as well as data display with charting ("Data") and rudimentary analysis ("View"). Also features a hangboard timer with pre-populated exercises.
 
